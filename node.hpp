@@ -6,9 +6,8 @@
  *
  * State_T admits methods get_valid_actions(), is_terminal(), clone),
  * a (preferably mutable) apply_action()
- *
 */
-
+#include <algorithm>
 #include <memory>
 #include <vector>
 
@@ -22,18 +21,16 @@ public:
     using node_sptr = std::shared_ptr<Node_T>;
     using node_uptr = std::unique_ptr<Node_T>;
 
-    explicit Node(const State_T& _state)
-        : state(_state)
-        , children()
-        , valid_actions(_state.get_valid_actions())
-        , parent(nullptr)
-        , parent_action(Action_T())
-        , n_visits(0)
-        , avg_value(0)
-    {
-    }
-
-    Node(const State_T& _state, Node_T* const _parent, Action_T _parent_action)
+    // Node(const State_T& _state)
+    //     : state(_state)
+    //     , children()
+    //     , valid_actions(_state.get_valid_actions())
+    //     , parent(nullptr)
+    //     , parent_action(Action_T())
+    //     , n_visits(0)
+    //     , avg_value(0)
+    // {}
+    Node(const State_T& _state, Node_T* const _parent=nullptr, Action_T _parent_action=Action_T())
         : state(_state)
         , children()
         , valid_actions(_state.get_valid_actions())
@@ -41,27 +38,7 @@ public:
         , parent_action(_parent_action)
         , n_visits(0)
         , avg_value(0)
-    {
-    }
-    // /** Partial constructor used for the clone() method. */
-    // Node(const State_T& oth_state, const std::vector<Action_T>& oth_actions, Action_T action)
-    //     : state(oth_state)
-    //     , valid_actions(oth_actions)
-    //     , children()
-    //     , parent(nullptr)
-    //     , parent_action(action)
-    //     , n_visits(0)
-    //     , avg_value(0)
-    // {
-    // }
-
-    /** Clone the node for the rollout phase (only copy the valid actions, not the children) */
-    node_uptr clone() const
-    {
-        auto cloned_node = std::make_unique<Node_T>(state, this);
-        cloned_node->valid_actions = valid_actions;
-        return cloned_node;
-    }
+    {}
     /** Update the average value and number of visits. */
     void update_stats(double val)
     {
@@ -71,7 +48,7 @@ public:
     Node_T& add_child(const Action_T& action) const
     {
         auto child_state = State_T(state).apply_action(action);
-        return *children.emplace_back(std::make_shared<Node_T>(child_state, this, action));
+        return *children.emplace_back(std::make_shared<Node_T>(child_state, const_cast<Node_T* const>(this), action));
     }
     /**
      * Apply an action to the state and update the valid actions vector.
@@ -121,7 +98,6 @@ public:
     {
         return avg_value;
     }
-
 private:
     State_T state;
     std::vector<Action_T> valid_actions;
@@ -131,7 +107,6 @@ private:
     int n_visits;
     double avg_value;
 };
-
 } // namespace mcts
 
 #endif // __NODE_H_
