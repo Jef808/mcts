@@ -13,13 +13,17 @@ namespace ttt {
 using line_t = std::array<int, 3>;
 
 /** The possible values for a Cell in a Tic-Tac-Toe grid. */
-enum class Token { EMPTY,
-    X,
-    O };
+enum class Token { EMPTY, X, O };
+
 /** The lines giving a win when filled up. */
-static constexpr std::array<line_t, 8> WIN_COMBIN { { { 0, 1, 2 }, { 3, 4, 5 }, { 6, 7, 8 }, { 0, 3, 6 }, { 1, 4, 7 }, { 2, 5, 8 }, { 0, 4, 8 }, { 2, 4, 6 } } };
+static constexpr std::array<line_t, 8> WIN_COMBIN { { { 0, 1, 2 }, { 3, 4, 5 }, { 6, 7, 8 },
+        { 0, 3, 6 }, { 1, 4, 7 }, { 2, 5, 8 }, { 0, 4, 8 }, { 2, 4, 6 } } };
+
 /** An empty 3x3 board. */
-constexpr std::array<Token, 9> EMPTY_GRID { { Token::EMPTY, Token::EMPTY, Token::EMPTY, Token::EMPTY, Token::EMPTY, Token::EMPTY, Token::EMPTY, Token::EMPTY, Token::EMPTY } };
+constexpr std::array<Token, 9> EMPTY_GRID {
+        { Token::EMPTY, Token::EMPTY, Token::EMPTY,
+          Token::EMPTY, Token::EMPTY, Token::EMPTY,
+          Token::EMPTY, Token::EMPTY, Token::EMPTY } };
 
 /** The actions to be played. */
 struct Action {
@@ -28,8 +32,7 @@ struct Action {
     Action(int _ndx = -1, Token _token = Token::EMPTY)
         : ndx(_ndx)
         , token(_token)
-    {
-    }
+    {}
     bool operator==(const Action& other) const
     {
         return ndx == other.ndx && token == other.token;
@@ -45,13 +48,10 @@ public:
     /** Initialize a State from a given 3x3 grid. */
     State(grid_t _grid = EMPTY_GRID)
         : grid(_grid)
-    {
-    }
-
+    {}
 private:
     /** The grid holding the cells of the game */
     grid_t grid;
-
 public:
     /** Check if the current game is over */
     bool is_terminal() const;
@@ -59,35 +59,20 @@ public:
     std::vector<Action> get_valid_actions() const;
     /** Play a move on the board directly. */
     State& apply_action(const Action&);
-    /**
-     * Return Token::X (resp Token::O) if X wins (resp if O wins)
-     * or Token::EMPTY if there is no winner.
-     */
+    /** Return the token of the winner if any or the empty token */
     Token get_winner() const;
     /** Check if game is a draw. */
     bool is_draw() const;
     /** Return token of player whose turn it is. */
     Token get_next_player() const;
 
-    Token operator[](int) const;
+    Token operator[](int ndx) const { return grid[ndx]; }
     bool operator==(const State& other) const { return grid == other.grid; }
-
 private:
     size_t n_empty_cells() const;
     token_line_t get_tokens(const line_t&) const;
 };
 
-// inline bool operator==(const Action& a, const Action& b)
-// {
-//     return a.operator==(b);
-// }
-// inline bool operator==(const State& a, const State& b)
-// {
-//     return a.operator==(b);
-// }
-inline Token State::operator[](int ndx) const { return grid[ndx]; }
-
-/** To print a token. */
 inline std::ostream& operator<<(std::ostream& _out, Token t)
 {
     switch (t) {

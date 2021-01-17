@@ -109,8 +109,7 @@ public:
     TTTAgent(const Token& tok, int _max_iter = 1000, int _max_roll = 100, double _br_fact = sqrt(2))
         : agent_token(tok)
         , mcts_agent_t<EvalFcn>()
-    {
-    }
+    {}
 };
 
 template <class Agent_T>
@@ -155,7 +154,7 @@ int main()
             } else if (winner != Token::EMPTY) {
                 return -1;
             }
-            return 0;
+        return 0;
         }
     };
 
