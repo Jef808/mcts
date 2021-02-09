@@ -6,7 +6,9 @@
 #include <iostream>
 #include <iterator>
 #include <ostream>
+#include <string>
 #include <vector>
+
 
 namespace ttt {
 
@@ -37,6 +39,7 @@ struct Action {
     {
         return ndx == other.ndx && token == other.token;
     }
+    operator std::string() const;
 };
 
 /** State of a 3x3 Tic-Tac-Toe game. */
@@ -59,6 +62,7 @@ public:
     std::vector<Action> get_valid_actions() const;
     /** Play a move on the board directly. */
     State& apply_action(const Action&);
+
     /** Return the token of the winner if any or the empty token */
     Token get_winner() const;
     /** Check if game is a draw. */
@@ -66,11 +70,30 @@ public:
     /** Return token of player whose turn it is. */
     Token get_next_player() const;
 
+    std::string to_s() const;
+
     Token operator[](int ndx) const { return grid[ndx]; }
     bool operator==(const State& other) const { return grid == other.grid; }
 private:
     size_t n_empty_cells() const;
     token_line_t get_tokens(const line_t&) const;
+};
+
+struct EvalFcn {
+
+    Token agent_token;
+    EvalFcn(Token tok) : agent_token(tok) {}
+
+    double operator()(const State& state, const Action& action) const
+    {
+        auto winner = state.get_winner();
+        if (winner == Token::EMPTY)
+        {
+            return 0.0;
+        }
+
+        return winner == agent_token ? 1.0 : -1.0;
+    }
 };
 
 inline std::ostream& operator<<(std::ostream& _out, Token t)
@@ -85,9 +108,38 @@ inline std::ostream& operator<<(std::ostream& _out, Token t)
     }
 }
 
+inline std::string to_s(Token t)
+{
+    switch (t) {
+    case Token::X:
+        return "X";
+    case Token::O:
+        return "O";
+    default:
+        return " ";
+    }
+}
+
+
 inline std::ostream& operator<<(std::ostream& _out, Action action)
 {
     return _out << '(' << action.ndx << ", " << action.token << ')';
+}
+
+inline ttt::Action::operator std::string() const {
+    return "(" + std::to_string(ndx) + "," + to_s(token) + ")";
+}
+
+    inline std::string ttt::State::to_s() const {
+    auto res = std::string();
+    for (int i = 0; i < 3; ++i) {
+        res +=  "| ";
+        for (int j = 0; j < 3; ++j) {
+            res += to_s(grid[i * 3 + j]) + " ";
+        }
+        res += " |\n";
+    }
+    return res;
 }
 
 /** To print a state. */
@@ -102,6 +154,7 @@ inline std::ostream& operator<<(std::ostream& _out, const State& board)
     }
     return _out;
 }
+
 }
 
 #endif // __TTT_H_

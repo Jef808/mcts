@@ -9,6 +9,7 @@
 */
 #include <algorithm>
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace mcts {
@@ -98,7 +99,14 @@ public:
     {
         return avg_value;
     }
+    operator std::string() const
+    {
+        auto res = std::string();
+        res += std::string(parent_action) + " " + std::to_string(avg_value);
+        return res;
+    }
 private:
+
     State_T state;
     std::vector<Action_T> valid_actions;
     mutable std::vector<node_sptr> children;

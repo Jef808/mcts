@@ -1,5 +1,4 @@
 #include "ttt.hpp"
-#include "mcts.hpp"
 #include <array>
 #include <iostream>
 #include <string>
@@ -11,7 +10,7 @@ size_t State::n_empty_cells() const
     return std::count_if(begin(grid), end(grid), [](const Token t) { return t == Token::EMPTY; });
 }
 
-Token State::get_next_player() const
+    Token State::get_next_player() const
 {
     return n_empty_cells() & 1 ? Token::X : Token::O;
 }
@@ -74,115 +73,6 @@ Token State::get_winner() const
     return Token::EMPTY;
 }
 
-bool is_valid(const State& state, const Action& action)
-{
-    auto valid_actions = state.get_valid_actions();
-    return std::find(cbegin(valid_actions), cend(valid_actions), action) != cend(valid_actions);
-}
 
-Action get_human_action(const State& state, Token human_token)
-{
-    auto action = Action(-1, human_token);
-    int buf;
-    while (!is_valid(state, action)) {
-        std::cout << "Choose your move..." << std::endl;
-        std::cin >> buf;
-        std::cin.ignore();
-        action.ndx = buf;
-    }
-    return action;
-}
-
-Action get_random_action(const State& state, Token tok)
-{
-    auto valid_actions = state.get_valid_actions();
-    int ndx = rand() % valid_actions.size();
-    return Action(ndx, tok);
-}
-
-template <class EvalFcn>
-using mcts_agent_t = mcts::Agent<State, Action, EvalFcn, mcts::policies::RandomRollout>;
-template <class EvalFcn>
-class TTTAgent : public mcts_agent_t<EvalFcn> {
-public:
-    const Token agent_token;
-    TTTAgent(const Token& tok, int _max_iter = 1000, int _max_roll = 100, double _br_fact = sqrt(2))
-        : agent_token(tok)
-        , mcts_agent_t<EvalFcn>()
-    {}
-};
-
-template <class Agent_T>
-Action get_next_action(const State& state, const Agent_T& agent)
-{
-    Token tok = state.get_next_player();
-    auto action = Action();
-    if (agent.agent_token == tok) {
-        action = agent.get_best_action(state);
-    } else {
-        action = get_human_action(state, tok);
-    }
-    return action;
-}
-
-Token get_player_token()
-{
-    std::string ans = "";
-    while (ans != "X" && ans != "O") {
-        std::cout << "What side do you want to play? (X or O)" << std::endl;
-        std::cin >> ans;
-        std::cin.ignore();
-    }
-    return ans == "X" ? Token::X : Token::O;
-}
 
 } // namespace ttt
-using namespace ttt;
-
-int main()
-{
-    Token player_token = get_player_token();
-    static Token agent_token = (player_token == Token::X ? Token::O : Token::X);
-
-    struct EvalFcn {
-        EvalFcn() { }
-        auto operator()(const State& state, const Action& action)
-        {
-            auto winner = state.get_winner();
-            if (winner == agent_token) {
-                return 1;
-            } else if (winner != Token::EMPTY) {
-                return -1;
-            }
-        return 0;
-        }
-    };
-
-    auto agent = TTTAgent<EvalFcn>(agent_token, 5000, 100, sqrt(2));
-
-    auto state = State();
-    auto action = Action();
-
-    while (!state.is_terminal()) {
-
-        action = get_next_action(state, agent);
-        state.apply_action(action);
-        std::cout << state << std::endl;
-
-        if (state.is_terminal()) {
-            break;
-        }
-        action = get_next_action(state, agent);
-        state.apply_action(action);
-        std::cout << state << std::endl;
-    }
-
-    Token winner = state.get_winner();
-    if (winner == Token::EMPTY) {
-        std::cout << "Game is a draw!" << std::endl;
-    } else {
-        std::cout << winner << " wins!" << std::endl;
-    }
-
-    return 0;
-}
