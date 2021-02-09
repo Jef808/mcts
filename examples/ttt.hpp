@@ -17,6 +17,8 @@ using line_t = std::array<int, 3>;
 /** The possible values for a Cell in a Tic-Tac-Toe grid. */
 enum class Token { EMPTY, X, O };
 
+inline std::string to_s(ttt::Token);
+
 /** The lines giving a win when filled up. */
 static constexpr std::array<line_t, 8> WIN_COMBIN { { { 0, 1, 2 }, { 3, 4, 5 }, { 6, 7, 8 },
         { 0, 3, 6 }, { 1, 4, 7 }, { 2, 5, 8 }, { 0, 4, 8 }, { 2, 4, 6 } } };
@@ -96,7 +98,38 @@ struct EvalFcn {
     }
 };
 
-inline std::ostream& operator<<(std::ostream& _out, Token t)
+
+
+inline ttt::Action::operator std::string() const {
+    return "(" + std::to_string(ndx) + "," + to_s(token) + ")";
+}
+
+inline std::string ttt::State::to_s() const {
+    auto res = std::string();
+    for (int i = 0; i < 3; ++i) {
+        res +=  "| ";
+        for (int j = 0; j < 3; ++j) {
+            res += ttt::to_s(grid[i * 3 + j]) + " ";
+        }
+        res += " |\n";
+    }
+    return res;
+}
+
+/** To print a state. */
+inline std::ostream& operator<<(std::ostream& _out, const ttt::State& board)
+{
+    for (int i = 0; i < 3; ++i) {
+        _out << "| ";
+        for (int j = 0; j < 3; ++j) {
+            _out << to_s(board[i * 3 + j]) << ' ';
+        }
+        _out << " |\n";
+    }
+    return _out;
+}
+
+inline std::ostream& operator<<(std::ostream& _out, ttt::Token t)
 {
     switch (t) {
     case Token::X:
@@ -108,51 +141,13 @@ inline std::ostream& operator<<(std::ostream& _out, Token t)
     }
 }
 
-inline std::string to_s(Token t)
-{
-    switch (t) {
-    case Token::X:
-        return "X";
-    case Token::O:
-        return "O";
-    default:
-        return " ";
-    }
-}
 
 
-inline std::ostream& operator<<(std::ostream& _out, Action action)
+
+
+inline std::ostream& operator<<(std::ostream& _out, ttt::Action action)
 {
     return _out << '(' << action.ndx << ", " << action.token << ')';
-}
-
-inline ttt::Action::operator std::string() const {
-    return "(" + std::to_string(ndx) + "," + to_s(token) + ")";
-}
-
-    inline std::string ttt::State::to_s() const {
-    auto res = std::string();
-    for (int i = 0; i < 3; ++i) {
-        res +=  "| ";
-        for (int j = 0; j < 3; ++j) {
-            res += to_s(grid[i * 3 + j]) + " ";
-        }
-        res += " |\n";
-    }
-    return res;
-}
-
-/** To print a state. */
-inline std::ostream& operator<<(std::ostream& _out, const State& board)
-{
-    for (int i = 0; i < 3; ++i) {
-        _out << "| ";
-        for (int j = 0; j < 3; ++j) {
-            _out << board[i * 3 + j] << ' ';
-        }
-        _out << " |\n";
-    }
-    return _out;
 }
 
 }
