@@ -31,7 +31,7 @@ public:
     //     , n_visits(0)
     //     , avg_value(0)
     // {}
-    Node(const State_T& _state, Node_T* const _parent=nullptr, Action_T _parent_action=Action_T())
+    Node(const State_T& _state, Node_T* const _parent = nullptr, Action_T _parent_action = Action_T())
         : state(_state)
         , children()
         , valid_actions(_state.get_valid_actions())
@@ -39,7 +39,8 @@ public:
         , parent_action(_parent_action)
         , n_visits(0)
         , avg_value(0)
-    {}
+    {
+    }
     /** Update the average value and number of visits. */
     void update_stats(double val)
     {
@@ -105,8 +106,8 @@ public:
         res += std::string(parent_action) + " " + std::to_string(avg_value);
         return res;
     }
-private:
 
+private:
     State_T state;
     std::vector<Action_T> valid_actions;
     mutable std::vector<node_sptr> children;

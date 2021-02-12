@@ -1,34 +1,54 @@
+// -*- c++ -*-
+// examples/mctsttt.hpp
+
+
 #ifndef __MCTSTTT_H_
 #define __MCTSTTT_H_
 
-#include "../../tikztreeold/dfs.hpp"
+#include <type_traits>
 #include "ttt.hpp"
 #include "../mcts.hpp"
 
-
 namespace ttt {
 
-    /** Extends the interface class for the particularities of ttt */
-    class Agent : public mcts::Agent<ttt::State, ttt::Action, ttt::EvalFcn, mcts::policies::RandomRollout>
-    {
-        using agent_mcts = mcts::Agent<ttt::State, ttt::Action, ttt::EvalFcn, mcts::policies::RandomRollout>;
-        using node_t = mcts::Node<ttt::State, ttt::Action>;
-        Token agent_token;
-        EvalFcn eval;
+class EvalFcn
+{
+public:
+    EvalFcn(Token _tok = Token::EMPTY)
+        : tok()
+    {}
+    double operator()(const ttt::State& state, const ttt::Action& action) const;
+    void setToken(Token _tok);
 
-    public:
+private:
+    ttt::Token tok;
+};
 
-        Agent(Token tok, int _max_iterations = 1000, int _max_rollout_depth = 100, double br_fact = sqrt(2));
+class Agent
+{
 
-        double evaluate(const State& state, const Action& action) const;
-        Token get_token() const;
-    };
+public:
+    Agent(Token token,
+        int _max_iter = 1000,
+        int _max_depth = 100,
+        int _branch = 2);
 
-    class tikz_ttt : public tikz::TikzTree
-    {
-        using Inode = mcts::Node<ttt::State, ttt::Action>;
-    };
+    Token get_token() const;
+    Action choose_action(const State& state);
+
+private:
+    ttt::Token agent_token;
+    mcts::Agent<
+        State,
+        Action,
+        EvalFcn,
+        ::mcts::policies::RandomRollout> _mcts;
+};
+
 
 }
+
+
+
 
 #endif // __MCTSTTT_H_

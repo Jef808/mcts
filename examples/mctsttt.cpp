@@ -1,21 +1,39 @@
+// -*- c++ -*-
+// examples/mctsttt.cpp
+
 #include "mctsttt.hpp"
 
 namespace ttt {
 
-
-    ttt::Agent::Agent(Token tok, int _max_it, int _max_rol, double br)
-        : Agent::agent_mcts { _max_it, _max_rol, br }
-        , agent_token(tok)
-        , eval(tok)
+    /** Binds a token in an evaluation function. */
+    double ttt::EvalFcn::operator()(const ttt::State& state, const ttt::Action& action) const
     {
-        eval = EvalFcn(tok);
+        return [=]() {
+            return std::invoke(&ttt::State::eval_terminal, state, tok);
+        }();
     }
 
-    double ttt::Agent::evaluate(const State& state, const Action& parent_action) const
+    void ttt::EvalFcn::setToken(Token _tok)
     {
-        return eval(state, parent_action);
+        tok = _tok;
     }
 
 
+    ttt::Agent::Agent(Token _tok, int _it, int _dpth, int _br)
+        : _mcts(_it, _dpth, _br)
+        , agent_token(_tok)
+    {
+        _mcts.setEvalPolicy(ttt::EvalFcn(agent_token));
+    }
+
+    Token ttt::Agent::get_token() const
+    {
+        return agent_token;
+    }
+
+    Action ttt::Agent::choose_action(const State& state)
+    {
+        return _mcts.get_best_action(state);
+    }
 
 }

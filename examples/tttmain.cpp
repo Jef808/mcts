@@ -1,7 +1,8 @@
+// -*- c++ -*-
+
 #include "mctsttt.hpp"
 
 using namespace ttt;
-
 
 bool is_valid(const State& state, const Action& action)
 {
@@ -40,27 +41,26 @@ Token get_player_token()
     return ans == "X" ? Token::X : Token::O;
 }
 
-
 using namespace mcts;
 
-Action get_next_action(const State& state, const ttt::Agent& agent)
+Action get_next_action(const State& state, ttt::Agent & agent)
 {
     Token tok = state.get_next_player();
     auto action = Action();
     if (agent.get_token() == tok) {
-        action = agent.get_best_action(state);
+        action = agent.choose_action(state);
     } else {
         action = get_human_action(state, tok);
-     }
+    }
     return action;
 }
-
 
 
 int main()
 {
     Token player_token = get_player_token();
     Token agent_token = (player_token == Token::X ? Token::O : Token::X);
+
 
     auto agent = ttt::Agent(agent_token, 5000, 100, sqrt(2));
 

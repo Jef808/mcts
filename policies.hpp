@@ -39,7 +39,8 @@ namespace policies {
 
         UCT1(double b_fact = sqrt(2))
             : BR_FACT(b_fact)
-        {}
+        {
+        }
         Node_T* operator()(Node_T* node)
         {
             return *std::max_element(begin(node->get_children()), end(node->get_children()),
@@ -47,6 +48,7 @@ namespace policies {
                     return child->get_avg_value() + c * sqrt(log(child->get_parent()->get_n_visits()) / child->get_n_visits());
                 });
         }
+
     private:
         double BR_FACT;
     };

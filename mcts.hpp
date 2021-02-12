@@ -10,6 +10,8 @@
  * RolloutPolicy<State, Action>()    : unique_ptr<Node_T> --> unique_ptr<Node_T>
  */
 
+#include "node.hpp"
+#include "policies.hpp"
 #include <algorithm>
 #include <assert.h>
 #include <cstdlib>
@@ -18,8 +20,6 @@
 #include <memory>
 #include <random>
 #include <string>
-#include "node.hpp"
-#include "policies.hpp"
 
 namespace mcts {
 
@@ -27,20 +27,23 @@ template <
     class State_T,
     class Action_T,
     typename EvaluationPolicy,
-    template <class, class> class RolloutPolicy
-    >
+    template <class, class> class RolloutPolicy>
 class Agent {
-public:
     using Node_T = Node<State_T, Action_T>;
     using node_sptr = std::shared_ptr<Node_T>;
     using node_uptr = std::unique_ptr<Node_T>;
+    //using agent_t = Agent<State_T, Action_T, EvaluationPolicy, RolloutPolicy>;
     typedef RolloutPolicy<State_T, Action_T> Rollout;
+
+public:
 
     Agent(int _max_iterations = 1000, int _max_rollout_depth = 100, double br_fact = sqrt(2))
         : max_iterations(_max_iterations)
         , max_rollout_depth(_max_rollout_depth)
         , BR_FACT(br_fact)
-    {}
+        , eval()
+    {
+    }
     Action_T get_best_action(const State_T& state) const
     {
         // Run n_iterations steps of the MCTS algorithm.
@@ -49,33 +52,56 @@ public:
         for (int i = 0; i < max_iterations; ++i) {
             step(*root);
         }
-        // DEBUG
-        // for (const auto& child : root.get_children()) {
-        //     std::cerr << "Action " << child->get_parent_action() << " has:" << std::endl;
-        //     std::cerr << "Value : " << child->get_avg_value() << " and n_visits : " << child->get_n_visits() << std::endl;
-        // }
         // Get the most visited child.
         return most_visited_action(*root);
+        // Get the child with best avg score.
+        //return best_avg_value_child(*root);
+
     }
+    void setEvalPolicy(EvaluationPolicy&& f)
+    {
+        eval = std::move(f);
+    }
+
+protected:
+    /** A full step of the MCTS algorithm. */
+    void step(Node_T& root) const
+    {
+        Node_T* node = &root;
+        // Selection (might not change node = &root if it has no children)
+        node = select_leaf(node);
+        // Expansion
+        if (node->is_terminal()) {
+            return;
+        }
+        // At this point, not terminal and not fully expanded...
+        Node_T& child_node = expand(*node);
+        // Rollout
+        auto reward = rollout(child_node);
+        // Backpropagate
+        backpropagate(node, reward);
+    }
+
 private:
     int max_iterations;
     int max_rollout_depth;
     double BR_FACT;
+    EvaluationPolicy eval;
 
     Action_T most_visited_action(const Node_T& node) const
     {
         return (*std::max_element(cbegin(node.get_children()), cend(node.get_children()),
-            [](const auto a, const auto b) {
-                return a->get_n_visits() < b->get_n_visits();
-            }))
+                    [](const auto a, const auto b) {
+                        return a->get_n_visits() < b->get_n_visits();
+                    }))
             ->get_parent_action();
     }
     Action_T best_avg_value_child(const Node_T& node) const
     {
         return (*std::max_element(cbegin(node.get_children()), cend(node.get_children()),
-            [](const auto& a, const auto& b) {
-                return a->get_avg_value() < b->get_avg_value();
-            }))
+                    [](const auto& a, const auto& b) {
+                        return a->get_avg_value() < b->get_avg_value();
+                    }))
             ->get_parent_action();
     }
     /** Select the (immediate) child of node with best uct score. */
@@ -85,7 +111,8 @@ private:
             return node.get_avg_value() + c * sqrt(log(node.get_parent()->get_n_visits()) / node.get_n_visits());
         };
 
-        return std::max_element(cbegin(node.get_children()), cend(node.get_children()),
+
+    return std::max_element(cbegin(node.get_children()), cend(node.get_children()),
             [&uct1_value](const auto& a, const auto& b) {
                 return uct1_value(*a) < uct1_value(*b);
             })
@@ -118,7 +145,7 @@ private:
     /** Interface for evaluating a state during rollout */
     double evaluate(const Node_T& node) const
     {
-        return EvaluationPolicy()(node.get_state(), node.get_parent_action());
+        return std::invoke(EvaluationPolicy(), node.get_state(), node.get_parent_action());
     }
     /** Simulate a complete playout and return a reward */
     double rollout(const Node_T& node) const
@@ -139,25 +166,6 @@ private:
         }
         node->update_stats(rollout_score);
         backpropagate(node->get_parent(), rollout_score);
-    }
-    /** A full step of the MCTS algorithm. */
-    void step(Node_T& root) const
-    {
-        Node_T* node = &root;
-        // Selection (might not change node = &root if it has no children)
-        node = select_leaf(node);
-        // Expansion
-        if (node->is_terminal()) {
-            return;
-        }
-        // At this point, not terminal and not fully expanded...
-        Node_T& child_node = expand(*node);
-
-        // Rollout
-        auto reward = rollout(child_node);
-
-        // Backpropagate
-        backpropagate(node, reward);
     }
 };
 }

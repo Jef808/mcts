@@ -1,3 +1,5 @@
+// -*- c++ -*-
+
 #ifndef __TTT_H_
 #define __TTT_H_
 
@@ -9,25 +11,29 @@
 #include <string>
 #include <vector>
 
-
 namespace ttt {
 
 using line_t = std::array<int, 3>;
 
-/** The possible values for a Cell in a Tic-Tac-Toe grid. */
-enum class Token { EMPTY, X, O };
 
-inline std::string to_s(ttt::Token);
+
+/** The possible values for a Cell in a Tic-Tac-Toe grid. */
+ enum class Token { EMPTY,
+    X,
+    O };
+
+std::string to_s(Token);
 
 /** The lines giving a win when filled up. */
 static constexpr std::array<line_t, 8> WIN_COMBIN { { { 0, 1, 2 }, { 3, 4, 5 }, { 6, 7, 8 },
-        { 0, 3, 6 }, { 1, 4, 7 }, { 2, 5, 8 }, { 0, 4, 8 }, { 2, 4, 6 } } };
+    { 0, 3, 6 }, { 1, 4, 7 }, { 2, 5, 8 }, { 0, 4, 8 }, { 2, 4, 6 } } };
 
 /** An empty 3x3 board. */
 constexpr std::array<Token, 9> EMPTY_GRID {
-        { Token::EMPTY, Token::EMPTY, Token::EMPTY,
-          Token::EMPTY, Token::EMPTY, Token::EMPTY,
-          Token::EMPTY, Token::EMPTY, Token::EMPTY } };
+    { Token::EMPTY, Token::EMPTY, Token::EMPTY,
+        Token::EMPTY, Token::EMPTY, Token::EMPTY,
+        Token::EMPTY, Token::EMPTY, Token::EMPTY }
+};
 
 /** The actions to be played. */
 struct Action {
@@ -36,7 +42,8 @@ struct Action {
     Action(int _ndx = -1, Token _token = Token::EMPTY)
         : ndx(_ndx)
         , token(_token)
-    {}
+    {
+    }
     bool operator==(const Action& other) const
     {
         return ndx == other.ndx && token == other.token;
@@ -53,10 +60,13 @@ public:
     /** Initialize a State from a given 3x3 grid. */
     State(grid_t _grid = EMPTY_GRID)
         : grid(_grid)
-    {}
+    {
+    }
+
 private:
     /** The grid holding the cells of the game */
     grid_t grid;
+
 public:
     /** Check if the current game is over */
     bool is_terminal() const;
@@ -69,45 +79,32 @@ public:
     Token get_winner() const;
     /** Check if game is a draw. */
     bool is_draw() const;
-    /** Return token of player whose turn it is. */
-    Token get_next_player() const;
-
+        Token get_next_player() const;
+    double eval_terminal(Token player_token) const;
+    /** Output a short string describing the state. */
+    operator std::string() const;
+    /** Pretty display the state. */
     std::string to_s() const;
-
     Token operator[](int ndx) const { return grid[ndx]; }
     bool operator==(const State& other) const { return grid == other.grid; }
 private:
+    token_line_t get_tokens(const line_t& line) const;
     size_t n_empty_cells() const;
-    token_line_t get_tokens(const line_t&) const;
-};
-
-struct EvalFcn {
-
-    Token agent_token;
-    EvalFcn(Token tok) : agent_token(tok) {}
-
-    double operator()(const State& state, const Action& action) const
-    {
-        auto winner = state.get_winner();
-        if (winner == Token::EMPTY)
-        {
-            return 0.0;
-        }
-
-        return winner == agent_token ? 1.0 : -1.0;
-    }
+    /** Return token of player whose turn it is. */
 };
 
 
-
-inline ttt::Action::operator std::string() const {
+// Formatting utils
+inline ttt::Action::operator std::string() const
+{
     return "(" + std::to_string(ndx) + "," + to_s(token) + ")";
 }
 
-inline std::string ttt::State::to_s() const {
+inline std::string ttt::State::to_s() const
+{
     auto res = std::string();
     for (int i = 0; i < 3; ++i) {
-        res +=  "| ";
+        res += "| ";
         for (int j = 0; j < 3; ++j) {
             res += ttt::to_s(grid[i * 3 + j]) + " ";
         }
@@ -140,10 +137,6 @@ inline std::ostream& operator<<(std::ostream& _out, ttt::Token t)
         return _out << ' ';
     }
 }
-
-
-
-
 
 inline std::ostream& operator<<(std::ostream& _out, ttt::Action action)
 {
