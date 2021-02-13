@@ -14,19 +14,29 @@ namespace ttt {
 class EvalFcn
 {
 public:
-    EvalFcn(Token _tok = Token::EMPTY)
-        : tok()
-    {}
-    double operator()(const ttt::State& state, const ttt::Action& action) const;
-    void setToken(Token _tok);
-
+    EvalFcn();
+    void SetToken(Token);
+    double operator()(const State&, const Action&) const;
+    EvalFcn* clone() const;
+    ~EvalFcn() { }
 private:
-    ttt::Token tok;
+    Token token;
+    EvalFcn(const EvalFcn&);
+    EvalFcn& operator=(const EvalFcn& other);
+};
+
+class EvalFcnHandler
+{
+public:
+    EvalFcnHandler();
+    EvalFcn* operator()();
+    void setToken(Token);
+private:
+    EvalFcn* evalInstance;
 };
 
 class Agent
 {
-
 public:
     Agent(Token token,
         int _max_iter = 1000,
@@ -35,20 +45,19 @@ public:
 
     Token get_token() const;
     Action choose_action(const State& state);
-
 private:
-    ttt::Token agent_token;
-    mcts::Agent<
-        State,
-        Action,
-        EvalFcn,
-        ::mcts::policies::RandomRollout> _mcts;
+    EvalFcnHandler handler;
+    Token agent_token;
+
+    mcts::Agent <
+        ttt::State,
+        ttt::Action,
+        decltype(handler()),
+        mcts::policies::RandomRollout> _mcts;
 };
 
 
 }
-
-
 
 
 #endif // __MCTSTTT_H_

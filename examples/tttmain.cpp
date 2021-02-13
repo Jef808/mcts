@@ -1,6 +1,7 @@
 // -*- c++ -*-
 
 #include "mctsttt.hpp"
+#include "ttt.hpp"
 
 using namespace ttt;
 
@@ -60,7 +61,6 @@ int main()
 {
     Token player_token = get_player_token();
     Token agent_token = (player_token == Token::X ? Token::O : Token::X);
-
 
     auto agent = ttt::Agent(agent_token, 5000, 100, sqrt(2));
 

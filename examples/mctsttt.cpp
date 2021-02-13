@@ -5,35 +5,64 @@
 
 namespace ttt {
 
-    /** Binds a token in an evaluation function. */
-    double ttt::EvalFcn::operator()(const ttt::State& state, const ttt::Action& action) const
-    {
-        return [=]() {
-            return std::invoke(&ttt::State::eval_terminal, state, tok);
-        }();
-    }
+ttt::EvalFcn::EvalFcn()
+    : token()
+{
+}
+void ttt::EvalFcn::SetToken(Token _tok)
+{
+    token = _tok;
+}
+double ttt::EvalFcn::operator()(const ttt::State& _state, const ttt::Action& _action) const
+{
+    return _state.eval_terminal(token);
+}
+ttt::EvalFcn* ttt::EvalFcn::clone() const
+{
+    return new EvalFcn(*this);
+}
 
-    void ttt::EvalFcn::setToken(Token _tok)
-    {
-        tok = _tok;
-    }
+ttt::EvalFcn::EvalFcn(const EvalFcn& other)
+{
+    token = other.token;
+}
+ttt::EvalFcn& ttt::EvalFcn::operator=(const EvalFcn& other)
+{
+    token = other.token;
+    return *this;
+}
 
+ttt::EvalFcnHandler::EvalFcnHandler()
+    : evalInstance(new EvalFcn())
+{
+}
 
-    ttt::Agent::Agent(Token _tok, int _it, int _dpth, int _br)
-        : _mcts(_it, _dpth, _br)
-        , agent_token(_tok)
-    {
-        _mcts.setEvalPolicy(ttt::EvalFcn(agent_token));
-    }
+ttt::EvalFcn* ttt::EvalFcnHandler::operator()()
+{
 
-    Token ttt::Agent::get_token() const
-    {
-        return agent_token;
-    }
+    return evalInstance->clone();
+}
+void ttt::EvalFcnHandler::setToken(Token t)
+{
+    evalInstance->SetToken(t);
+}
 
-    Action ttt::Agent::choose_action(const State& state)
-    {
-        return _mcts.get_best_action(state);
-    }
+ttt::Agent::Agent(Token _tok, int _it, int _dpth, int _br)
+    : _mcts(_it, _dpth, _br)
+    , agent_token(_tok)
+    , handler()
+{
+    handler.setToken(_tok);
+}
+
+Token ttt::Agent::get_token() const
+{
+    return agent_token;
+}
+
+ttt::Action ttt::Agent::choose_action(const ttt::State& state)
+{
+    return _mcts.get_best_action(state);
+}
 
 }

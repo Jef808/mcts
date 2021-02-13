@@ -4,6 +4,7 @@
 #include "node.hpp"
 #include <algorithm>
 #include <cstdlib>
+#include <optional>
 #include <math.h>
 #include <memory>
 #include <vector>
@@ -11,6 +12,7 @@
 namespace mcts {
 
 namespace policies {
+
 
     template <typename State_T, typename Action_T>
     struct RandomRollout {

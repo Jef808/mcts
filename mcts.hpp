@@ -41,7 +41,6 @@ public:
         : max_iterations(_max_iterations)
         , max_rollout_depth(_max_rollout_depth)
         , BR_FACT(br_fact)
-        , eval()
     {
     }
     Action_T get_best_action(const State_T& state) const
@@ -86,7 +85,7 @@ private:
     int max_iterations;
     int max_rollout_depth;
     double BR_FACT;
-    EvaluationPolicy eval;
+    EvaluationPolicy* eval;
 
     Action_T most_visited_action(const Node_T& node) const
     {
@@ -145,7 +144,7 @@ private:
     /** Interface for evaluating a state during rollout */
     double evaluate(const Node_T& node) const
     {
-        return std::invoke(EvaluationPolicy(), node.get_state(), node.get_parent_action());
+        return std::invoke(*EvaluationPolicy(), node.get_state(), node.get_parent_action());
     }
     /** Simulate a complete playout and return a reward */
     double rollout(const Node_T& node) const
