@@ -1,22 +1,17 @@
 [
 {
   "directory": "/home/jfa/code/projects/mcts-impl/build",
-  "command": "/usr/bin/c++ -Dtikz_EXPORTS -I/home/jfa/code/projects/mcts-impl/../tikztreeold -g -fPIC -std=gnu++17 -o CMakeFiles/tikz.dir/home/jfa/code/projects/tikztreeold/dfs.cpp.o -c /home/jfa/code/projects/tikztreeold/dfs.cpp",
-  "file": "/home/jfa/code/projects/tikztreeold/dfs.cpp"
-},
-{
-  "directory": "/home/jfa/code/projects/mcts-impl/build",
-  "command": "/usr/bin/c++  -I/home/jfa/code/projects/mcts-impl/examples -g -std=gnu++17 -o CMakeFiles/ttt.dir/examples/TTT.cpp.o -c /home/jfa/code/projects/mcts-impl/examples/TTT.cpp",
+  "command": "/usr/bin/c++  -I/home/jfa/code/projects/mcts-impl -I/home/jfa/code/projects/mcts-impl/examples -g -std=gnu++17 -o CMakeFiles/ttt.dir/examples/TTT.cpp.o -c /home/jfa/code/projects/mcts-impl/examples/TTT.cpp",
   "file": "/home/jfa/code/projects/mcts-impl/examples/TTT.cpp"
 },
 {
   "directory": "/home/jfa/code/projects/mcts-impl/build",
-  "command": "/usr/bin/c++  -I/home/jfa/code/projects/mcts-impl/examples -I/home/jfa/code/projects/mcts-impl/. -I/home/jfa/code/projects/mcts-impl/../tikztreeold -g -std=gnu++17 -o CMakeFiles/tttmain.dir/examples/tttmain.cpp.o -c /home/jfa/code/projects/mcts-impl/examples/tttmain.cpp",
+  "command": "/usr/bin/c++  -I/home/jfa/code/projects/mcts-impl -I/home/jfa/code/projects/mcts-impl/examples -g -std=gnu++17 -o CMakeFiles/tttmain.dir/examples/tttmain.cpp.o -c /home/jfa/code/projects/mcts-impl/examples/tttmain.cpp",
   "file": "/home/jfa/code/projects/mcts-impl/examples/tttmain.cpp"
 },
 {
   "directory": "/home/jfa/code/projects/mcts-impl/build",
-  "command": "/usr/bin/c++  -I/home/jfa/code/projects/mcts-impl/examples -I/home/jfa/code/projects/mcts-impl/. -I/home/jfa/code/projects/mcts-impl/../tikztreeold -g -std=gnu++17 -o CMakeFiles/tttmain.dir/examples/mctsttt.cpp.o -c /home/jfa/code/projects/mcts-impl/examples/mctsttt.cpp",
+  "command": "/usr/bin/c++  -I/home/jfa/code/projects/mcts-impl -I/home/jfa/code/projects/mcts-impl/examples -g -std=gnu++17 -o CMakeFiles/tttmain.dir/examples/mctsttt.cpp.o -c /home/jfa/code/projects/mcts-impl/examples/mctsttt.cpp",
   "file": "/home/jfa/code/projects/mcts-impl/examples/mctsttt.cpp"
 }
 ]

@@ -13,95 +13,82 @@
 
 namespace ttt {
 
-using line_t = std::array<int, 3>;
-
-
-
 /** The possible values for a Cell in a Tic-Tac-Toe grid. */
- enum class Token { EMPTY,
+enum class Token { EMPTY,
     X,
     O };
-
-std::string to_s(Token);
-
+/** Token to string. */
+const extern std::string to_s(const Token _token);
 /** The lines giving a win when filled up. */
-static constexpr std::array<line_t, 8> WIN_COMBIN { { { 0, 1, 2 }, { 3, 4, 5 }, { 6, 7, 8 },
-    { 0, 3, 6 }, { 1, 4, 7 }, { 2, 5, 8 }, { 0, 4, 8 }, { 2, 4, 6 } } };
-
+const extern std::array<std::array<int, 3>, 8> WIN_COMBIN;
 /** An empty 3x3 board. */
-constexpr std::array<Token, 9> EMPTY_GRID {
-    { Token::EMPTY, Token::EMPTY, Token::EMPTY,
-        Token::EMPTY, Token::EMPTY, Token::EMPTY,
-        Token::EMPTY, Token::EMPTY, Token::EMPTY }
-};
+const extern std::array<Token, 9> EMPTY_GRID;
+
+// inline bool operator==(const Token& token, const Token& other_token)
+// {
+//     return to_s(token) == to_s(other_token);
+// }
 
 /** The actions to be played. */
 struct Action {
     int ndx;
     Token token;
-    Action(int _ndx = -1, Token _token = Token::EMPTY)
-        : ndx(_ndx)
-        , token(_token)
-    {
-    }
-    bool operator==(const Action& other) const
-    {
-        return ndx == other.ndx && token == other.token;
-    }
+    Action(int _ndx = -1, Token _token = Token::EMPTY);
+    bool operator==(const Action& other) const;
     operator std::string() const;
 };
 
 /** State of a 3x3 Tic-Tac-Toe game. */
 class State {
-public:
+    // const std::array<line_t, 8>& WIN_COMBIN = ttt::WIN_COMBIN;
+    // const std::array<Token, 9>& EMPTY_GRID = ttt::EMPTY_GRID;
     using grid_t = std::array<Token, 9>;
-    using token_line_t = std::array<Token, 3>;
-
-    /** Initialize a State from a given 3x3 grid. */
-    State(grid_t _grid = EMPTY_GRID)
-        : grid(_grid)
-    {
-    }
-
-private:
-    /** The grid holding the cells of the game */
-    grid_t grid;
+    using line_t = std::array<int, 3>;
+    using line_token_t = std::array<Token, 3>;
 
 public:
+    /** Initialize a State from a given 3x3 grid. */
+    State();
     /** Check if the current game is over */
     bool is_terminal() const;
     /** Return indices of empty cells. */
     std::vector<Action> get_valid_actions() const;
     /** Play a move on the board directly. */
     State& apply_action(const Action&);
-
     /** Return the token of the winner if any or the empty token */
     Token get_winner() const;
     /** Check if game is a draw. */
     bool is_draw() const;
-        Token get_next_player() const;
-    double eval_terminal(Token player_token) const;
+    /** The player who's turn it is to play.*/
+    Token get_next_player() const;
     /** Output a short string describing the state. */
     operator std::string() const;
     /** Pretty display the state. */
     std::string to_s() const;
     Token operator[](int ndx) const { return grid[ndx]; }
     bool operator==(const State& other) const { return grid == other.grid; }
+
+    //double eval_terminal(Token) const;
+
 private:
-    token_line_t get_tokens(const line_t& line) const;
+    /** The grid holding the cells of the game. */
+    grid_t grid;
+    /** Takes a triple of grid indices and return the corresponding tokens. */
+    line_token_t get_tokens(const line_t&) const;
+    /** Number of empty cells. */
     size_t n_empty_cells() const;
-    /** Return token of player whose turn it is. */
+    /** Checks if the tokens at the given indices are all the same. */
+    bool three_in_row(const line_token_t&, Token) const;
 };
 
 
-// Formatting utils
-inline ttt::Action::operator std::string() const
-{
+
+/** Action to string */
+inline Action::operator std::string() const {
     return "(" + std::to_string(ndx) + "," + to_s(token) + ")";
 }
-
-inline std::string ttt::State::to_s() const
-{
+/** State to string */
+inline State::operator std::string() const {
     auto res = std::string();
     for (int i = 0; i < 3; ++i) {
         res += "| ";
@@ -112,35 +99,17 @@ inline std::string ttt::State::to_s() const
     }
     return res;
 }
-
+/** To print a token. */
+inline std::ostream& operator<<(std::ostream& _out, ttt::Token _token) {
+    return _out << to_s(_token);
+}
 /** To print a state. */
-inline std::ostream& operator<<(std::ostream& _out, const ttt::State& board)
-{
-    for (int i = 0; i < 3; ++i) {
-        _out << "| ";
-        for (int j = 0; j < 3; ++j) {
-            _out << to_s(board[i * 3 + j]) << ' ';
-        }
-        _out << " |\n";
-    }
-    return _out;
+inline std::ostream& operator<<(std::ostream& _out, const ttt::State& _state) {
+    return _out << std::string(_state);
 }
-
-inline std::ostream& operator<<(std::ostream& _out, ttt::Token t)
-{
-    switch (t) {
-    case Token::X:
-        return _out << "X";
-    case Token::O:
-        return _out << "O";
-    default:
-        return _out << ' ';
-    }
-}
-
-inline std::ostream& operator<<(std::ostream& _out, ttt::Action action)
-{
-    return _out << '(' << action.ndx << ", " << action.token << ')';
+/** To print an action. */
+inline std::ostream& operator<<(std::ostream& _out, ttt::Action _action) {
+    return _out << '(' << _action.ndx << ", " << _action.token << ')';
 }
 
 }

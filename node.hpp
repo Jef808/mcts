@@ -8,19 +8,22 @@
  * a (preferably mutable) apply_action()
 */
 #include <algorithm>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
+//#include "../tikztreeold/dfs.hpp"
 
 namespace mcts {
+
 
 /** Wrapper class around a state to build a search tree */
 template <typename State_T, typename Action_T>
 class Node {
 public:
     using Node_T = Node<State_T, Action_T>;
-    using node_sptr = std::shared_ptr<Node_T>;
-    using node_uptr = std::unique_ptr<Node_T>;
+    using node_sptr = std::shared_ptr<Node>;
+    using node_uptr = std::unique_ptr<Node>;
 
     // Node(const State_T& _state)
     //     : state(_state)
@@ -31,26 +34,66 @@ public:
     //     , n_visits(0)
     //     , avg_value(0)
     // {}
-    Node(const State_T& _state, Node_T* const _parent = nullptr, Action_T _parent_action = Action_T())
+    Node(const State_T& _state, Node* const _parent = nullptr, Action_T _parent_action = Action_T())
         : state(_state)
         , children()
         , valid_actions(_state.get_valid_actions())
         , parent(_parent)
         , parent_action(_parent_action)
-        , n_visits(0)
+        , n_visits(1)
         , avg_value(0)
     {
     }
+    // Node(const Node& other)
+    //     : state(other.state)
+    //     , valid_actions(other.valid_actions)
+    //     , children(other.children)
+    //     , parent(other.parent)
+    //     , parent_action(other.parent_action)
+    //     , n_visits(other.n_visits)
+    //     , avg_value(other.avg_value)
+    // {
+    // }
+    // Node& operator=(const Node& other)
+    // {
+    //     if (&other == this)
+    //     {
+    //         return *this;
+    //     }
+    //     state = other.state;
+    //     valid_actions = other.valid_actions;
+    //     children.clear();
+    //     std::copy(begin(other.children), end(other.children), begin(children));
+    //     parent = const_cast<Node* const>(&other);
+    //     parent_action = other.parent_action;
+    //     n_visits = other.n_visits;
+    //     avg_value = other.avg_value;
+    // }
+    // ~Node()
+    // {
+    //     children.clear();
+    //     valid_actions.clear();
+    //     //parent = nullptr;
+    //     parent_action = Action_T();
+    //     n_visits = 1;
+    //     avg_value = 0;
+    // }
+
+    // Node* clone() const
+    // {
+    //     return new Node(*this);
+    // }
     /** Update the average value and number of visits. */
     void update_stats(double val)
     {
         avg_value = (avg_value * n_visits + val) / (++n_visits);
     }
     /** Add a child corresponding to the given action. */
-    Node_T& add_child(const Action_T& action) const
+    Node& add_child(const Action_T& action) const
     {
-        auto child_state = State_T(state).apply_action(action);
-        return *children.emplace_back(std::make_shared<Node_T>(child_state, const_cast<Node_T* const>(this), action));
+        auto child_state = State_T(state);
+        child_state.apply_action(action);
+        return *children.emplace_back(std::make_shared<Node>(child_state.apply_action(action), const_cast<Node* const>(this), action));
     }
     /**
      * Apply an action to the state and update the valid actions vector.
@@ -75,7 +118,7 @@ public:
     {
         return state;
     }
-    Node_T* const get_parent() const
+    Node* const get_parent() const
     {
         return parent;
     }
@@ -102,16 +145,15 @@ public:
     }
     operator std::string() const
     {
-        auto res = std::string();
-        res += std::string(parent_action) + " " + std::to_string(avg_value);
-        return res;
+        return std::string(state);
     }
 
 private:
+
     State_T state;
     std::vector<Action_T> valid_actions;
     mutable std::vector<node_sptr> children;
-    Node_T* const parent;
+    Node* const parent;
     Action_T parent_action;
     int n_visits;
     double avg_value;

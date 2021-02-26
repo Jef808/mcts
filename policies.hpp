@@ -54,6 +54,28 @@ namespace policies {
     private:
         double BR_FACT;
     };
+
+// template <typename State_T, typename Action_T>
+//     struct UCT1_2PlayersGame {
+//         using Node_T = Node<State_T, Action_T>;
+
+//         UCT1_2PlayersGame(double b_fact = sqrt(2))
+//             : BR_FACT(b_fact)
+//         {
+//         }
+//         Node_T* operator()(const Node_T& node) const
+//         {
+
+//             return *std::max_element(begin(node->get_children()), end(node->get_children()),
+//                 [c = BR_FACT](auto* child) {
+//                     return child->get_avg_value() + c * sqrt(log(child->get_parent()->get_n_visits()) / child->get_n_visits());
+//                 });
+//         }
+
+//     private:
+//         double BR_FACT;
+//     };
+
 } // policies
 } // mcts
 #endif // __DEFAULTPOLICIES_H_
