@@ -19,6 +19,12 @@ constexpr void BT::bits::init()
         RankBB[r] = RankBB[r-1] << 8;
     }
 
+    for (Rank r = Rank::R1; r < Rank::R8; ++r)
+    {
+        ForwardRankBB[to_int(Color::White)][to_int(r)] = RankBB[to_int(r)] << 8;
+        ForwardRankBB[to_int(Color::Black)][to_int(r)] = RankBB[to_int(r)] >> 8;
+    }
+
     /**
      * All the ranks forward for white at r = (All the ranks BACKWARDS for black at r+1
      *                                         PLUS
@@ -53,9 +59,14 @@ constexpr void BT::bits::init()
             PassedPawnMask[_c][_s] = (
                 ForwardFileBB[_c][_s] | PawnAttackSpan[_c][_s]
             );
-            ForwardMoveBB[_c][_s] = (
-                PassedPawnMask[_c][_s] & RankBB[_r + 1]
+            ForwardCapturesBB[_c][_s] = (
+                ForwardRankBB[_c][_r] & AdjacentFilesBB[_f]
+            );
+            ForwardMovesBB[_c][_s] = (
+                ForwardCapturesBB[_c][_s] & FileBB[_f]
             );
         }
     }
+
+
 }

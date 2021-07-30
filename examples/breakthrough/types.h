@@ -41,18 +41,35 @@ enum class Color : char {
     White = 0, Black, Nb = 2
 };
 
-enum class Piece {
+enum class Pawn {
     White = 0, Black, None
 };
+constexpr std::size_t Max_pawns = 32;
 
 /**
  * bit 0-2: Square's file
  * bit 3-5: Square's rank
  */
 enum class Square : uint8_t {
-    A1 = 0, H1 = 7, A8 = 56, H8 = 63,
-    Nb = 64
+    A1, H1, A8, H8,
+    Nb = 64,
 };
+
+enum class Square_d : int {
+    North = 8,
+    East = 1,
+    South = -North,
+    West = -East,
+
+    North_east = North + East,
+    South_east = South + East,
+    South_west = South + West,
+    North_west = North + West
+};
+
+inline constexpr Square operator+(Square s, Square_d d) {
+    return Square(to_int(s) + to_int(d));
+}
 
 /**
  * bit 0- 5: Destination square
@@ -80,12 +97,12 @@ inline constexpr Color operator~(Color c) {
     return Color(to_int(c) ^ 1);
 }
 
-inline constexpr Color color_of(Piece pc) {
+inline constexpr Color color_of(Pawn pc) {
     return Color(to_int(pc));
 }
 
-inline constexpr Piece make_piece(Color c) {
-    return Piece(to_int(c));
+inline constexpr Pawn make_pawn(Color c) {
+    return Pawn(to_int(c));
 }
 
 /**

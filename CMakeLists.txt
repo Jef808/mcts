@@ -7,6 +7,7 @@ set( CMAKE_CXX_STANDARD_REQUIRED 17 )
 
 set( mcts_root_DIR ${CMAKE_CURRENT_SOURCE_DIR} )
 set( mcts_source_DIR ${mcts_root_DIR}/src )
+set( mcts_utils_DIR ${mcts_source_DIR}/utils )
 set( mcts_examples_DIR ${mcts_root_DIR}/examples )
 
 add_subdirectory( ${mcts_examples_DIR} )

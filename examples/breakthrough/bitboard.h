@@ -59,12 +59,55 @@ constexpr Bitboard Rank8BB = Rank1BB << (8 * 7);
 extern Bitboards<Square> SquareBB;
 extern Bitboards<File> FileBB;
 extern Bitboards<Rank> RankBB;
+extern Bitboards<Color, Rank> ForwardRankBB;
 extern Bitboards<Color, Rank> ForwardRanksBB;
 extern Bitboards<Color, Square> ForwardFileBB;
 extern Bitboards<File> AdjacentFilesBB;
 extern Bitboards<Color, Square> PawnAttackSpan;
 extern Bitboards<Color, Square> PassedPawnMask;
-extern Bitboards<Color, Square> ForwardMoveBB;
+extern Bitboards<Color, Square> ForwardCapturesBB;
+extern Bitboards<Color, Square> ForwardMovesBB;
+
+inline constexpr Bitboard square_bb(Square s) {
+    return SquareBB[to_int(s)];
+}
+
+inline constexpr Bitboard rank_bb(Rank r) {
+    return RankBB[to_int(r)];
+}
+inline constexpr Bitboard rank_bb(Square s) {
+    return RankBB[to_int(rank_of(s))];
+}
+inline constexpr Bitboard file_bb(File f) {
+    return FileBB[to_int(f)];
+}
+inline constexpr Bitboard file_bb(Square s) {
+    return FileBB[to_int(file_of(s))];
+}
+
+template<Square_d D>
+inline constexpr Bitboard shift(Bitboard b) {
+    return D == Square_d::North ? b << 8 : D == Square_d::South ? b >> 8
+        : D == Square_d::North_east ? (b & ~FileHBB) << 9 : D == Square_d::South_east ? (b & ~FileHBB) >> 7
+        : D == Square_d::North_west ? (b & ~FileABB) << 7 : D == Square_d::South_west ? (b & ~FileABB) >> 9
+        : 0;
+}
+
+inline constexpr Bitboard forward_rank_bb(Color c, Square s) {
+    return ForwardRankBB[to_int(c)][to_int(rank_of(s))];
+}
+
+inline constexpr Bitboard valid_noncaptures_bb(Color c, Square s, Bitboard occupied) {
+    return ForwardMovesBB[to_int(c)][to_int(s)] & ~occupied;
+}
+
+inline constexpr Bitboard captures_bb(Color c, Square s, Bitboard opp_pieces) {
+    return ForwardCapturesBB[to_int(c)][to_int(s)] & opp_pieces;
+}
+
+inline constexpr Bitboard valid_moves_bb_(Color c, Square s, const Bitboards<Color>& byColorBB) {
+    return ForwardMovesBB[to_int(c)][to_int(s)] & (~byColorBB[to_int(c)] | byColorBB[to_int(~c)]);
+}
 
 } // namespace BT
 
