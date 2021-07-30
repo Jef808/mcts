@@ -4,21 +4,44 @@
 #include <array>
 #include <cstdint>
 #include <vector>
+#include <type_traits>
 
 namespace BT {
 
-using Bitboard = uint64_t;
-
 template<typename E>
-inline std::underlying_type_t<E> to_int(E e) {
+inline constexpr std::underlying_type_t<E> to_int(E e) {
     return static_cast<std::underlying_type_t<E>>(e);
 }
+
+using Bitboard = uint64_t;
+
+template<typename T, std::enable_if_t<!std::is_void_v<T>, std::size_t> N>
+using crossBB = typename std::conditional<!std::is_void_v<T>,
+                                          std::array<Bitboard, N>,
+                                          Bitboard>::type;
+
+template<typename E>
+constexpr std::size_t Nb() {
+    if constexpr (std::is_void_v<E>) {
+        return 0;
+    } else {
+        return to_int<E>(E::Nb);
+    }
+}
+
+template<typename E, typename F = void>
+using Bitboards = std::array<
+    typename std::conditional<std::is_void_v<F>,
+                              Bitboard,
+                              std::array<Bitboard,
+                                         Nb<F>()>
+                              >::type, Nb<E>()>;
 
 enum class Color : char {
     White = 0, Black, Nb = 2
 };
 
-enum class Piece : uint8_t {
+enum class Piece {
     White = 0, Black, None
 };
 
@@ -45,39 +68,47 @@ enum class Move : uint16_t {
     Null = 0x3F
 };
 
-enum class File : char {
+enum class File : uint8_t {
     FA, FB, FC, FD, FE, FF, FG, FH, Nb = 8
 };
 
-enum class Rank : char {
+enum class Rank : uint8_t {
     R1, R2, R3, R4, R5, R6, R7, R8, Nb = 8
 };
 
-inline Color operator~(Color c) {
+inline constexpr Color operator~(Color c) {
     return Color(to_int(c) ^ 1);
+}
+
+inline constexpr Color color_of(Piece pc) {
+    return Color(to_int(pc));
+}
+
+inline constexpr Piece make_piece(Color c) {
+    return Piece(to_int(c));
 }
 
 /**
  * Vertical flip: The rank of a square is encoded in bits 3-5,
  * so to flip it vertically we XOR with '0b111000' = '0x38' = 56
  */
-inline Square operator~(Square s) {
+inline constexpr Square operator~(Square s) {
     return Square(to_int(s) ^ 0x38);
 }
 
-inline bool is_valid(Square s) {
+inline constexpr bool is_valid(Square s) {
     return s >= Square::A1 && s <= Square::H8;
 }
 
-inline Color color_of(Piece pc) {
-    return Color(to_int(pc));
+inline constexpr Square make_square(File f, Rank r) {
+    return Square((to_int(r) << 3) + to_int(f));
 }
 
-inline File file_of(Square s) {
+inline constexpr File file_of(Square s) {
     return File(to_int(s) & 7);
 }
 
-inline Rank rank_of(Square s) {
+inline constexpr Rank rank_of(Square s) {
     return Rank(to_int(s) >> 3);
 }
 
@@ -87,15 +118,15 @@ inline Rank rank_of(Square s) {
  * This way, we can use the same board arithmetics
  * from the point of view of both players.
  */
-inline Square relative_square(Color c, Square s) {
+inline constexpr Square relative_square(Color c, Square s) {
     return Square(to_int(s) ^ (to_int(c) * 0x38));
 }
 
-inline Rank relative_rank(Color c, Square s) {
+inline constexpr Rank relative_rank(Color c, Square s) {
     return Rank(to_int(s) ^ (to_int(c) * 7));
 }
 
-inline Square from_sq(Move m) {
+inline constexpr Square from_sq(Move m) {
     return Square(to_int(m) >> 6);
 }
 
@@ -103,18 +134,23 @@ inline Square from_sq(Move m) {
  * Destination square is encoded in the first 6 bits,
  * so we can mask with '0b111111' = '0x3F' = 63
  */
-inline Square to_sq(Move m) {
+inline constexpr Square to_sq(Move m) {
     return Square(to_int(m) & 0x3F);
 }
 
-inline Move make_move(Square from, Square to) {
+inline constexpr Move make_move(Square from, Square to) {
     return Move((to_int(from) >> 6) + to_int(to));
 }
 
-inline bool is_valid(Move m) {
+inline constexpr bool is_valid(Move m) {
     return from_sq(m) != to_sq(m);
 }
 
+
+template<typename E>
+inline constexpr E operator++(E e) {
+    return e == E::Nb ? E::Nb : E(to_int(e) + 1);
+}
 
 
 } // BT

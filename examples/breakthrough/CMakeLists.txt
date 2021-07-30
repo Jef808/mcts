@@ -7,4 +7,5 @@ add_executable( bt
 
 target_include_directories( bt
   PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR} )
+  ${CMAKE_CURRENT_SOURCE_DIR},
+  ${mcts_source_DIR} )

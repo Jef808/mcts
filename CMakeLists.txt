@@ -5,8 +5,8 @@ set( CMAKE_EXPORT_COMPILE_COMMANDS on )
 set( CMAKE_CXX_STANDARD 17 )
 set( CMAKE_CXX_STANDARD_REQUIRED 17 )
 
-set( root_DIR ${CMAKE_CURRENT_SOURCE_DIR} )
-set( source_DIR ${root_DIR}/src )
-set( examples_DIR ${root_DIR}/examples )
+set( mcts_root_DIR ${CMAKE_CURRENT_SOURCE_DIR} )
+set( mcts_source_DIR ${mcts_root_DIR}/src )
+set( mcts_examples_DIR ${mcts_root_DIR}/examples )
 
-add_subdirectory( ${examples_DIR} )
+add_subdirectory( ${mcts_examples_DIR} )
