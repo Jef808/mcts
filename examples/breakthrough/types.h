@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cstdint>
+#include <iostream>
 #include <vector>
 #include <type_traits>
 
@@ -51,7 +52,7 @@ constexpr std::size_t Max_pawns = 32;
  * bit 3-5: Square's rank
  */
 enum class Square : uint8_t {
-    A1, H1, A8, H8,
+    A1, H1=7, A3=16, A7 = 48, A8=56, H8,
     Nb = 64,
 };
 
@@ -97,12 +98,13 @@ inline constexpr Color operator~(Color c) {
     return Color(to_int(c) ^ 1);
 }
 
-inline constexpr Color color_of(Pawn pc) {
-    return Color(to_int(pc));
+inline constexpr Color color_of(Pawn p) {
+    return p == Pawn::White ? Color::White :
+        p == Pawn::Black ? Color::Black : Color::Nb;
 }
 
 inline constexpr Pawn make_pawn(Color c) {
-    return Pawn(to_int(c));
+    return c == Color::White ? Pawn::White : Pawn::Black;
 }
 
 /**
@@ -156,7 +158,7 @@ inline constexpr Square to_sq(Move m) {
 }
 
 inline constexpr Move make_move(Square from, Square to) {
-    return Move((to_int(from) >> 6) + to_int(to));
+    return Move((to_int(from) << 6) + to_int(to));
 }
 
 inline constexpr bool is_valid(Move m) {
@@ -164,11 +166,68 @@ inline constexpr bool is_valid(Move m) {
 }
 
 
+// inline constexpr Square& operator++(Square& s) {
+//     return s == Square::Nb ? s : s = Square(to_int(s) + 1);
+// }
+
+
 template<typename E>
-inline constexpr E operator++(E e) {
-    return e == E::Nb ? E::Nb : E(to_int(e) + 1);
+inline constexpr E& operator++(E& e) {
+    return e == E::Nb ? e : e = E(to_int<E>(e) + 1);
 }
 
+template<typename E>
+inline constexpr E& operator--(E& e) {
+    return to_int(e) == 0 ? e : e = E(to_int(e) - 1);
+}
+
+template<typename E>
+inline constexpr bool operator<(E e1, E e2) {
+    return to_int<E>(e1) < to_int<E>(e2);
+}
+
+template<typename E>
+inline constexpr bool operator>(E e1, E e2) {
+    return to_int<E>(e1) > to_int<E>(e2);
+}
+
+inline std::ostream& operator<<(std::ostream& out, Pawn p) {
+    switch (color_of(p)) {
+        case Color::White: { out << "W"; break; }
+        case Color::Black: { out << "B"; break; }
+        default: { out << "."; break; }
+    }
+    return out;
+}
+
+inline std::ostream& operator<<(std::ostream& out, Square s) {
+    File f = file_of(s);
+    Rank r = rank_of(s);
+    switch(f) {
+        case File::FA: { out << "a"; break; }
+        case File::FB: { out << "b"; break; }
+        case File::FC: { out << "c"; break; }
+        case File::FD: { out << "d"; break; }
+        case File::FE: { out << "e"; break; }
+        case File::FF: { out << "f"; break; }
+        case File::FG: { out << "g"; break; }
+        case File::FH: { out << "h"; break; }
+        default: break;
+    }
+    switch (r) {
+        case Rank::R1: { out << "1"; break; }
+        case Rank::R2: { out << "2"; break; }
+        case Rank::R3: { out << "3"; break; }
+        case Rank::R4: { out << "4"; break; }
+        case Rank::R5: { out << "5"; break; }
+        case Rank::R6: { out << "6"; break; }
+        case Rank::R7: { out << "7"; break; }
+        case Rank::R8: { out << "8"; break; }
+        default: break;
+    }
+
+    return out;
+}
 
 } // BT
 

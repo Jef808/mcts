@@ -1,28 +1,46 @@
 #include "bitboard.h"
+#include "types.h"
 
-constexpr void BT::bits::init()
+#include <bitset>
+#include <iostream>
+
+namespace BT {
+
+Bitboards<Square> SquareBB { };
+Bitboards<File> FileBB { };
+Bitboards<Rank> RankBB { };
+Bitboards<Color, Rank> ForwardRankBB {{}};
+Bitboards<Color, Rank> ForwardRanksBB {{}};
+Bitboards<Color, Square> ForwardFileBB {{}};
+Bitboards<File> AdjacentFilesBB { };
+Bitboards<Color, Square> PawnAttackSpan {{}};
+Bitboards<Color, Square> PassedPawnMask {{}};
+Bitboards<Color, Square> ForwardCapturesBB {{}};
+Bitboards<Color, Square> ForwardMovesBB {{}};
+
+void bits::init()
 {
-    for (int s = to_int(Square::A1); s < to_int(Square::H8); ++s)
+    for (Square s = Square::A1; s != Square::Nb; ++s)
     {
-        SquareBB[s] = 1ULL << s;
+        SquareBB[to_int(s)] = 1ULL << to_int(s);
     }
 
-    FileBB[0] = FileABB;
-    for (int f = to_int(File::FB); f < to_int(File::Nb); ++f)
+    FileBB[to_int(File::FA)] = FileABB;
+    for (File f = File::FB; f != File::Nb; ++f)
     {
-        FileBB[f] = FileBB[f-1] << 1;
+        FileBB[to_int(f)] = (FileBB[to_int(f)-1] << 1);
     }
 
-    RankBB[0] = Rank1BB;
-    for (int r = to_int(Rank::R1); r < to_int(Rank::Nb); ++r)
+    RankBB[to_int(Rank::R1)] = Rank1BB;
+    for (Rank r = Rank::R2; r < Rank::Nb; ++r)
     {
-        RankBB[r] = RankBB[r-1] << 8;
+        RankBB[to_int(r)] = (RankBB[to_int(r)-1] << 8);
     }
 
-    for (Rank r = Rank::R1; r < Rank::R8; ++r)
+    for (Rank r = Rank::R1; r < Rank::Nb; ++r)
     {
-        ForwardRankBB[to_int(Color::White)][to_int(r)] = RankBB[to_int(r)] << 8;
-        ForwardRankBB[to_int(Color::Black)][to_int(r)] = RankBB[to_int(r)] >> 8;
+        ForwardRankBB[to_int(Color::White)][to_int(r)] = (RankBB[to_int(r)] << 8);
+        ForwardRankBB[to_int(Color::Black)][to_int(r)] = (RankBB[to_int(r)] >> 8);
     }
 
     /**
@@ -30,7 +48,7 @@ constexpr void BT::bits::init()
      *                                         PLUS
      *                                         the rank r)
      */
-    for (Rank r = Rank::R1; r < Rank::R8; ++r)
+    for (Rank r = Rank::R1; r < Rank::Nb; ++r)
     {
         ForwardRanksBB[to_int(Color::White)][to_int(r)] = ~(
             ForwardRanksBB[to_int(Color::Black)][to_int(r) + 1] = (
@@ -39,7 +57,7 @@ constexpr void BT::bits::init()
 
     AdjacentFilesBB[to_int(File::FA)] = FileBB[to_int(File::FB)];
     AdjacentFilesBB[to_int(File::FH)] = FileBB[to_int(File::FG)];
-    for (int f = to_int(File::FB); f < to_int(File::FG); ++f)
+    for (int f = to_int(File::FB); f < to_int(File::FH); ++f)
     {
         AdjacentFilesBB[f] = FileBB[f - 1] | FileBB[f + 1];
     }
@@ -59,14 +77,15 @@ constexpr void BT::bits::init()
             PassedPawnMask[_c][_s] = (
                 ForwardFileBB[_c][_s] | PawnAttackSpan[_c][_s]
             );
-            ForwardCapturesBB[_c][_s] = (
-                ForwardRankBB[_c][_r] & AdjacentFilesBB[_f]
-            );
             ForwardMovesBB[_c][_s] = (
-                ForwardCapturesBB[_c][_s] & FileBB[_f]
+                ForwardRankBB[_c][_r] & (ForwardFileBB[_c][_s] | AdjacentFilesBB[_f])
+            );
+            ForwardCapturesBB[_c][_s] = (
+                ForwardMovesBB[_c][_r] ^ ForwardFileBB[_c][_s]
             );
         }
     }
-
-
 }
+
+
+} // namespace BT::bits

@@ -1,11 +1,12 @@
 
 set( bt_SOURCES
-  breakthrough.cpp )
+  ${bt_DIR}/board.cpp,
+  ${bt_DIR}/bitboard.cpp )
 
 add_executable( bt
-  ${bt_SOURCES} )
+  breakthrough.cpp board.cpp bitboard.cpp )
 
 target_include_directories( bt
   PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR},
+  ${bt_DIR},
   ${mcts_source_DIR} )
