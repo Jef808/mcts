@@ -38,22 +38,41 @@ using Bitboards = std::array<
                                          Nb<F>()>
                               >::type, Nb<E>()>;
 
-enum class Color : char {
+enum class Color : uint8_t {
     White = 0, Black, Nb = 2
 };
 
-enum class Pawn {
+enum class Pawn : uint8_t {
     White = 0, Black, None
 };
+constexpr std::size_t Max_w_pawns = 16;
 constexpr std::size_t Max_pawns = 32;
-
+constexpr std::size_t Square_Nb = 64;
 /**
  * bit 0-2: Square's file
  * bit 3-5: Square's rank
  */
 enum class Square : uint8_t {
-    A1, H1=7, A3=16, A7 = 48, A8=56, H8,
-    Nb = 64,
+    A1, B1, C1, D1, E1, F1, G1, H1,
+    A2, B2, C2, D2, E2, F2, G2, H2,
+    A3, B3, C3, D3, E3, F3, G3, H3,
+    A4, B4, C4, D4, E4, F4, G4, H4,
+    A5, B5, C5, D5, E5, F5, G5, H5,
+    A6, B6, C6, D6, E6, F6, G6, H6,
+    A7, B7, C7, D7, E7, F7, G7, H7,
+    A8, B8, C8, D8, E8, F8, G8, H8,
+    Nb = Square_Nb,
+};
+
+constexpr std::array<Square, 64> _BOARD {
+    Square::A1, Square::B1, Square::C1, Square::D1, Square::E1, Square::F1, Square::G1, Square::H1,
+    Square::A2, Square::B2, Square::C2, Square::D2, Square::E2, Square::F2, Square::G2, Square::H2,
+    Square::A3, Square::B3, Square::C3, Square::D3, Square::E3, Square::F3, Square::G3, Square::H3,
+    Square::A4, Square::B4, Square::C4, Square::D4, Square::E4, Square::F4, Square::G4, Square::H4,
+    Square::A5, Square::B5, Square::C5, Square::D5, Square::E5, Square::F5, Square::G5, Square::H5,
+    Square::A6, Square::B6, Square::C6, Square::D6, Square::E6, Square::F6, Square::G6, Square::H6,
+    Square::A7, Square::B7, Square::C7, Square::D7, Square::E7, Square::F7, Square::G7, Square::H7,
+    Square::A8, Square::B8, Square::C8, Square::D8, Square::E8, Square::F8, Square::G8, Square::H8
 };
 
 enum class Square_d : int {
@@ -69,7 +88,7 @@ enum class Square_d : int {
 };
 
 inline constexpr Square operator+(Square s, Square_d d) {
-    return Square(to_int(s) + to_int(d));
+    return Square(int(to_int(s)) + to_int(d));
 }
 
 /**
@@ -186,11 +205,6 @@ inline constexpr bool operator<(E e1, E e2) {
     return to_int<E>(e1) < to_int<E>(e2);
 }
 
-template<typename E>
-inline constexpr bool operator>(E e1, E e2) {
-    return to_int<E>(e1) > to_int<E>(e2);
-}
-
 inline std::ostream& operator<<(std::ostream& out, Pawn p) {
     switch (color_of(p)) {
         case Color::White: { out << "W"; break; }
@@ -200,9 +214,12 @@ inline std::ostream& operator<<(std::ostream& out, Pawn p) {
     return out;
 }
 
-inline std::ostream& operator<<(std::ostream& out, Square s) {
-    File f = file_of(s);
-    Rank r = rank_of(s);
+inline std::ostream& operator<<(std::ostream& out, Color c) {
+    return out << (c == Color::White ? "White" :
+                   c == Color::Black ? "Black" : "None");
+}
+
+inline std::ostream& operator<<(std::ostream& out, File f) {
     switch(f) {
         case File::FA: { out << "a"; break; }
         case File::FB: { out << "b"; break; }
@@ -214,6 +231,10 @@ inline std::ostream& operator<<(std::ostream& out, Square s) {
         case File::FH: { out << "h"; break; }
         default: break;
     }
+    return out;
+}
+
+inline std::ostream& operator<<(std::ostream& out, Rank r) {
     switch (r) {
         case Rank::R1: { out << "1"; break; }
         case Rank::R2: { out << "2"; break; }
@@ -227,6 +248,14 @@ inline std::ostream& operator<<(std::ostream& out, Square s) {
     }
 
     return out;
+}
+
+inline std::ostream& operator<<(std::ostream& out, Square s) {
+    return out << file_of(s) << rank_of(s);
+}
+
+inline std::ostream& operator<<(std::ostream& out, Move m) {
+    return out << from_sq(m) << to_sq(m);
 }
 
 } // BT

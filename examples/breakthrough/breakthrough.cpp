@@ -1,70 +1,200 @@
-#include <iostream>
-#include <random>
-
-#include "board.h"
 #include "bitboard.h"
+#include "board.h"
 #include "types.h"
 
-using namespace BT;
+#include <cmath>
+#include <iostream>
+#include <random>
+#include <string>
+#include <thread>
 
-std::ostream& operator<<(std::ostream& out, Move m) {
-    return out << from_sq(m) << to_sq(m);
+#include "mcts.h"
+#include "policies.h"
+#include "utils/agent_random.h"
+
+void progress_bar(int cnt, int n_games)
+{
+    int progress = int(80.0 * cnt / n_games);
+    std::cout << '|'
+               << std::string(progress, '@')
+              << std::string(80 - progress, ' ')
+              << '|'
+              << std::endl;
 }
 
 
 
-int main(int argc, char *argv[])
+using namespace BT;
+
+template<size_t N>
+struct TimeCutoff_UCB_Func
 {
-    std::cout << "Initializing the position..." << std::endl;
+    auto operator()(double expl_cst, unsigned int n_parent_visits)
+    {
+        return [expl_cst, n_parent_visits]<typename EdgeT>(const EdgeT& edge)
+            {
+            double ret = (n_parent_visits < N
+                          ? expl_cst * sqrt(log(n_parent_visits) / (edge.n_visits + 1.0))
+                          : 0.00001);
+            return ret + edge.total_val / (edge.n_visits + 1.0);
+        };
+    }
+};
 
-    Position pos { };
 
-    std::cout << "\nDone! Position is\n"
-              << pos
-              << std::endl;
+template <typename Agent>
+struct configure_agent {
+    using Backprop = typename Agent::BackpropagationStrategy;
+    using NPlayers = typename Agent::NPlayers;
 
-    auto valid_actions = pos.valid_actions();
+    int n_iterations = 500;
+    double max_time = 0;
+    double expl_cst = 1.0;
 
-    std::cout << "\nValid actions:\n"
-              << std::endl;
+    void operator()(Agent& mcts)
+    {
+        mcts.set_max_iterations(n_iterations);
+        mcts.set_max_time(max_time);
+        mcts.set_exploration_constant(expl_cst);
+        mcts.set_backpropagation_strategy(
+            Backprop::avg_best_value);
+        mcts.set_n_players(
+            NPlayers::Two);
+    }
+};
 
-    for (auto m : valid_actions) {
-        std::cout << m << '\n';
+template <>
+struct configure_agent<Agent_random<Position>> {
+    int n_iterations = 2000;
+    int max_time = 0;
+
+    void operator()(Agent_random<Position>& agent)
+    {
+        agent.set_max_iterations(n_iterations);
+        agent.set_max_time(max_time);
+    }
+};
+
+int main(int argc, char* argv[])
+{
+    using namespace mcts;
+
+    using action_type = Position::action_type;
+    using MctsAgent = Mcts<Position,
+        action_type,
+        TimeCutoff_UCB_Func<30>,
+        policies::Default_Playout_Func<Position, action_type>,
+        128>;
+
+    Position pos_bk {};
+
+    //Color mcts_player = Color::White;
+    Color p_rand = Color::White;
+    Color p_rand_opp = Color::Black;
+
+    int n_games = 30;
+    const int n_iters = 10000;
+    std::vector<std::chrono::milliseconds> times;
+    std::vector<bool> results;
+    utils::Stopwatch sw{};
+    auto time = std::chrono::milliseconds::zero();
+
+    for (int i = 0; i < n_games; ++i) {
+
+
+        progress_bar(i, n_games);
+
+        Position pos = pos_bk;
+
+        Move move_buf;
+        //MctsAgent mcts{pos};
+        Agent_random<Position> rand0 { pos };
+        Agent_random<Position> rand { pos };
+
+        //configure_agent<MctsAgent> conf1{};
+        configure_agent<Agent_random<Position>> conf2 {};
+        //conf1.n_iterations = n_iters;
+        conf2.n_iterations = n_iters;
+        //conf1.expl_cst = 0.3;
+        //conf1(mcts);
+        conf2(rand0);
+        conf2(rand);
+
+        int depth = 0;
+
+        while (!pos.is_terminal())
+        {
+            if (pos.side_to_move() == p_rand) {
+                sw.reset_start();
+                move_buf = rand.best_action();
+                time += sw.get();
+                //move_buf = rand.best_action();
+            } else {
+                move_buf = rand0.best_action();
+                //std::this_thread::sleep_for(std::chrono::milliseconds{400});
+            }
+
+            // std::cout << "\n\n*******************\n\n"
+            //           << pos
+            //           << "\n\nPlayer: "
+            //           << (pos.side_to_move() == mcts_player ? "MCTS" : "RAND")
+            //           << "\nAction: "
+            //           << move_buf << '\n'
+            //           << "\n****************\n"
+            //           << std::endl;
+
+
+            //mcts.apply_root_action(move_buf);
+            rand0.apply_root_action(move_buf);
+            rand.apply_root_action(move_buf);
+            pos.apply_action(move_buf);
+            ++depth;
+        }
+
+        // bool res = (pos.winner(pos) == mcts_player ? 1 : 0);
+        // results.push_back(res);
+
+        // std::cout << "\n\n*******************\n"
+        //       << "TERMINAL:\n\n"
+        //       << pos
+        //       << "Winner: "
+        //       << (Position::winner(pos) == mcts_player ? "MCTS" : "RAND")
+        //       << "\n****************\n"
+        //       << "Time taken with " << n_iters
+        //       << " iterations: "
+        //       << std::setprecision(4)
+        //       << time.count()
+        //       << " ms."
+        //       << "\nDepth reached: "
+        //       << depth
+        //       << "Number of nodes created: "
+        //       << mcts.get_n_nodes()
+        //       << ", each of size "
+        //       << sizeof(MctsAgent::node_type)
+        //       << std::endl;
+
+        // std::cout << "Input any character to continue..." << std::endl;
+        // char _block{ };
+        // std::cin >> _block; std::cin.ignore();
     }
 
-    Move chosen = valid_actions[rand() % valid_actions.size()];
-    std::cout << "Chose move " << chosen << '\n';
-
-    pos.apply_action(chosen);
-
-    std::cout << "After applying action, state is\n"
-              << pos
-              << std::endl;
-
-    std::cout << "Random playout:\n";
-    while (!pos.is_terminal()) {
-        valid_actions = pos.valid_actions();
-        chosen = valid_actions[rand() % valid_actions.size()];
-        std::cout << "\n***********\n"
-                  << pos
-                  << "\nAction: "
-                  << chosen << '\n';
-        pos.apply_action(chosen);
-        std::cout << pos
-                  << "\n************"
-                  << std::endl;
-    }
-
-    Color winner = Position::winner(pos);
-
-    std::cout << "\n*************"
-              << "\nTERMINAL:\n\n"
-              << pos
-              << "\n\n"
-              << std::endl;
-
-    std::cout << "Winner is: "
-              << (winner == Color::White ? "White" : "Black")
+    auto total_wins = std::count_if(results.begin(), results.end(), [](auto r) {
+        return r;
+    });
+    std::cout << "\n\n*************\n"
+              << "After "
+              << n_games
+              << " with each "
+              << n_iters
+              << " iterations.\n"
+              << " Average time taken: "
+              << std::setprecision(4)
+              << time.count() / double(n_games)
+              << " ms."
+              << "\nNumber of wins: "
+              << total_wins
+              << "\nFor a winning percentage of "
+              << 100.0 * total_wins / n_games << " %."
               << std::endl;
 
     return 0;
