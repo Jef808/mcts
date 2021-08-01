@@ -27,12 +27,12 @@ public:
     Position();
 
     key_type constexpr key() const;
+
     const std::vector<Move>& valid_actions() const;
-    const std::vector<Move>& valid_actions_backup() const;
-    std::pair<int, Move_list> valid_actions_() const;
     bool apply_action(Move);
-    Move apply_random_action_();
     Move apply_random_action();
+    Move apply_random_action_gen();
+
     bool constexpr is_terminal() const;
     reward_type constexpr evaluate(Move) const;
     static reward_type constexpr evaluate_terminal(const Position&);
@@ -40,20 +40,10 @@ public:
     static constexpr Color winner(const Position& pos);
 
 private:
-    template<typename T>
-    using Board_map = std::array<T, to_int(Square::Nb)>;
-
-    //Board_map<Pawn> m_board;
     Bitboards<Color> m_byColorBB;
-    //std::array<std::unordered_map<Square, Pawn>, to_int(Color::Nb)> m_pawns;
-    //std::array<std::unordered_set<std::pair<Square, Pawn>>, Max_pawns / 2> m_pawns_set;
     std::array<std::vector<std::pair<Square, Pawn>>, to_int(Color::Nb)> m_pawns;
     Color m_side_to_move;
     key_type m_key;
-
-    // std::array<Pawn, Max_pawns> m_pieces;
-    // int m_pawns_count;
-    //Board_map<std::size_t> m_index;
 
     mutable std::vector<Move> m_move_list;
 
@@ -62,10 +52,10 @@ private:
     void move_pawn(Pawn, Square from, Square to);
     key_type compute_key() const;
 
-
     std::vector<std::pair<Square, Pawn>>& pawns(Color);
     const std::vector<std::pair<Square, Pawn>>& pawns (Color) const;
     Bitboard color_bb(Color c) const;
+    Bitboard& color_bb(Color c);
 
     friend std::ostream& operator<<(std::ostream&, const Position&);
     Square last_played_w;
@@ -74,7 +64,8 @@ private:
 
 inline std::ostream& operator<<(std::ostream& out, const Position& pos) {
 
-    std::array<Pawn, Square_Nb> game_pawns {Pawn::None};
+    std::array<Pawn, Square_Nb> game_pawns{};
+    std::fill(game_pawns.begin(), game_pawns.end(), Pawn::None);
 
     for (Color c : { Color::White, Color::Black })
     {
@@ -84,32 +75,31 @@ inline std::ostream& operator<<(std::ostream& out, const Position& pos) {
         }
     }
 
-    for (Rank r = Rank::R8; r > Rank::R1; --r) {
-        for (File f = File::FA; f != File::Nb; ++f) {
-            Square s = make_square(f, r);
-            if (s == pos.last_played_w)
-            {
-                out << "\e[38;5;72m"
-                    << game_pawns[to_int(s)]
-                    << "\e[m";
-            }
-            else if (s == pos.last_played_b)
-            {
-                out << "\e[38;5;105m"
-                    << game_pawns[to_int(s)]
-                    << "\e[m";
-            }
-            else
-            {
-                out << game_pawns[to_int(s)];
-            }
+    for (int i=0; i < Square_Nb; ++i)
+    {
+        Square s = ~Square(i);
+
+        if (s == pos.last_played_w)
+        {
+            out << "\e[38;5;72m"
+                << game_pawns[to_int(s)]
+                << "\e[m";
         }
-        out << '\n';
+        else if (s == pos.last_played_b)
+        {
+            out << "\e[38;5;105m"
+                << game_pawns[to_int(s)]
+                << "\e[m";
+        }
+        else
+        {
+            out << game_pawns[to_int(s)];
+        }
+
+        if ((square_bb(s) & FileHBB) > 0)
+            out << '\n';
     }
-    for (File f = File::FA; f != File::Nb; ++f) {
-        Square s = make_square(f, Rank::R1);
-        out << game_pawns[to_int(s)];
-    }
+
     return out;
 }
 
@@ -119,6 +109,10 @@ inline std::vector<std::pair<Square, Pawn>>& Position::pawns(Color c) {
 
 inline const std::vector<std::pair<Square, Pawn>>& Position::pawns(Color c) const {
     return m_pawns[to_int(c)];
+}
+
+inline Bitboard& Position::color_bb(Color c) {
+    return m_byColorBB[to_int(c)];
 }
 
 inline Bitboard Position::color_bb(Color c) const {
@@ -134,40 +128,21 @@ inline Position::key_type constexpr Position::key() const {
 }
 
 inline void Position::put_piece(Pawn p, Square s) {
-    int _c = to_int(color_of(p));
-    // m_board[to_int(s)] = p;
-    m_byColorBB[_c] |= square_bb(s);
-    // m_pawns[_c].insert(std::pair{s, p});
-    m_pawns[_c].push_back(std::make_pair(s, p));
+    m_byColorBB[to_int(color_of(p))] |= square_bb(s);
+    pawns(color_of(p)).push_back(std::make_pair(s, p));
 }
 
 inline void Position::remove_piece(Pawn p, Square s) {
-    int _c = to_int(color_of(p));
-    // m_board[to_int(s)] = Pawn::None;
-    m_byColorBB[_c] ^= square_bb(s);
-    // m_pawns[_c].erase(s);
-    auto& pawns = m_pawns[_c];
-    auto it = std::find_if(pawns.begin(), pawns.end(), [&s](const auto& e){
-        return e.first == s;
-    });
-    if (it != pawns.end())
-        pawns.erase(it);
+    m_byColorBB[to_int(color_of(p))] &= ~square_bb(s);
+    auto& my_pawns = pawns(color_of(p));
+    my_pawns.erase(std::find(my_pawns.begin(), my_pawns.end(), std::make_pair(s, p)));
 }
 
 inline void Position::move_pawn(Pawn p, Square from, Square to) {
-    Bitboard from_to = square_bb(from) ^ square_bb(to);
-    int _c = to_int(color_of(p));
-    m_byColorBB[_c] ^= from_to;
-    // m_board[to_int(from)] = Pawn::None;
-    // m_board[to_int(to)] = p;
-    // auto node_handler = m_pawns[_c].extract(from);
-    // node_handler.key() = to;
-    // m_pawns[_c].insert(std::move(node_handler));
-    auto it = std::find_if(m_pawns[_c].begin(), m_pawns[_c].end(), [&from](const auto& e){
-        return e.first == from;
-    });
-    if (it != m_pawns[_c].end())
-        it->first = to;
+    m_byColorBB[to_int(color_of(p))] ^= (square_bb(from) ^ square_bb(to));
+    auto& my_pawns = pawns(color_of(p));
+    std::find(my_pawns.begin(), my_pawns.end(), std::make_pair(from, p))
+        ->first = to;
 }
 
 // inline Bitboard constexpr Position::all_pawns_bb() const {

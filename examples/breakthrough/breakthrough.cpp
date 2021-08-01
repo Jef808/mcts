@@ -10,6 +10,7 @@
 
 #include "mcts.h"
 #include "policies.h"
+#include "minmax.h"
 #include "utils/agent_random.h"
 
 void progress_bar(int cnt, int n_games)
@@ -85,15 +86,18 @@ int main(int argc, char* argv[])
         TimeCutoff_UCB_Func<30>,
         policies::Default_Playout_Func<Position, action_type>,
         128>;
+    using Minmax_agent = minmax::Agent;
 
     Position pos_bk {};
 
-    //Color mcts_player = Color::White;
-    Color p_rand = Color::White;
-    Color p_rand_opp = Color::Black;
 
-    int n_games = 30;
-    const int n_iters = 10000;
+    Color p_minmax = Color::White;
+    //Color p_mcts = Color::White;
+    Color p_rand = Color::Black;
+    //Color p_rand_opp = Color::Black;
+
+    int n_games = 1;
+    const int n_iters = 3000;
     std::vector<std::chrono::milliseconds> times;
     std::vector<bool> results;
     utils::Stopwatch sw{};
@@ -101,58 +105,65 @@ int main(int argc, char* argv[])
 
     for (int i = 0; i < n_games; ++i) {
 
-
         progress_bar(i, n_games);
 
         Position pos = pos_bk;
 
         Move move_buf;
         //MctsAgent mcts{pos};
-        Agent_random<Position> rand0 { pos };
+
         Agent_random<Position> rand { pos };
+        Minmax_agent minmax;
 
         //configure_agent<MctsAgent> conf1{};
         configure_agent<Agent_random<Position>> conf2 {};
         //conf1.n_iterations = n_iters;
         conf2.n_iterations = n_iters;
-        //conf1.expl_cst = 0.3;
+        //conf1.expl_cst = 0.7;
         //conf1(mcts);
-        conf2(rand0);
         conf2(rand);
 
         int depth = 0;
 
         while (!pos.is_terminal())
         {
-            if (pos.side_to_move() == p_rand) {
+            if (pos.side_to_move() == p_minmax) {
                 sw.reset_start();
-                move_buf = rand.best_action();
+                //move_buf = mcts.best_action();
+                move_buf = minmax.best_action(pos);
                 time += sw.get();
                 //move_buf = rand.best_action();
             } else {
-                move_buf = rand0.best_action();
+                move_buf = rand.best_action();
                 //std::this_thread::sleep_for(std::chrono::milliseconds{400});
             }
 
             // std::cout << "\n\n*******************\n\n"
             //           << pos
             //           << "\n\nPlayer: "
-            //           << (pos.side_to_move() == mcts_player ? "MCTS" : "RAND")
+            //           << (pos.side_to_move() == p_rand ? "RAND" : "RAND0")
             //           << "\nAction: "
             //           << move_buf << '\n'
             //           << "\n****************\n"
             //           << std::endl;
 
+            // auto va = pos.valid_actions();
+            // std::cout << "\nValid actions were:\n";
+
+            // for (auto a : va) {
+            //     std::cout << a << '\n';
+            // }
+            // std::cout << std::endl;
 
             //mcts.apply_root_action(move_buf);
-            rand0.apply_root_action(move_buf);
+            //mcts.apply_root_action(move_buf);
             rand.apply_root_action(move_buf);
             pos.apply_action(move_buf);
             ++depth;
         }
 
-        // bool res = (pos.winner(pos) == mcts_player ? 1 : 0);
-        // results.push_back(res);
+        bool res = (pos.winner(pos) == p_minmax ? 1 : 0);
+        results.push_back(res);
 
         // std::cout << "\n\n*******************\n"
         //       << "TERMINAL:\n\n"
@@ -184,11 +195,11 @@ int main(int argc, char* argv[])
     std::cout << "\n\n*************\n"
               << "After "
               << n_games
-              << " with each "
+              << " with "
               << n_iters
-              << " iterations.\n"
+              << " iterations per game turn...\n"
               << " Average time taken: "
-              << std::setprecision(4)
+              << std::setprecision(6)
               << time.count() / double(n_games)
               << " ms."
               << "\nNumber of wins: "
