@@ -2,27 +2,47 @@
 #define MINMAX_H_
 
 #include "board.h"
+#include "types.h"
 
+#include <cstddef>
 #include <algorithm>
+#include <iostream>
 
 namespace minmax {
 
+template<typename StateT, typename ActionT>
 struct Default_ActionCmp {
-    using action_type = BT::Position::action_type;
 
-    double operator()(const action_type& a, const action_type& b) {
-        return 0.5;
-    }
+
+    Default_ActionCmp() = default;
+
+    template<typename A>
+    auto operator()(const A& a, const A& b) {
+        if constexpr (std::is_enum_v<A>)
+        {
+            return to_int(a) < to_int(b);
+        }
+        else
+        {
+            std::cerr << "WTF" << std::endl;
+            return a < b;
+        }
 };
 
-template<typename ActionCmp = Default_ActionCmp>
+template<typename StateT, typename ActionT, typename ActionCmp = Default_ActionCmp<StateT, ActionT>>
 class Agent {
 public:
     using reward_type = double;
     using state_type = BT::Position;
     using action_type = BT::Position::action_type;
 
-    Agent() = default;
+    /// Default_ActionCmp
+    Agent() :
+        beam_width{ 0 },
+        action_cmp(ActionCmp{ })
+    {
+
+    }
 
     action_type best_action(const state_type& state)
     {
@@ -44,6 +64,7 @@ public:
     }
 private:
     int beam_width;
+    ActionCmp action_cmp;
 
     reward_type evaluate(const state_type& state, const action_type& a) const
     {
@@ -63,8 +84,8 @@ private:
          * Select only a subset of the actions depending on the beam_width
          * and ActionCmp parameters.
         */
-        std::sort(actions.begin(), actions.end(), [](const auto& a, const auto& b){
-            return ActionCmp(a, b) > 0.55 ? true: false;
+        std::sort(actions.begin(), actions.end(), [&](const auto& a, const auto& b){
+            return action_cmp(a, b) > 0.55 ? true: false;
         });
 
         if (beam_width > 0 && actions.size() > beam_width) {
@@ -85,10 +106,6 @@ private:
         return 1 - *std::max(evaluations.begin(), evaluations.end());
     }
 };
-
-
-
-
 
 
 

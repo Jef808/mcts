@@ -164,7 +164,7 @@ inline bool constexpr Position::is_terminal() const {
 }
 
 Position::reward_type constexpr Position::evaluate_terminal(const Position& pos) {
-    return winner(pos) == ~pos.m_side_to_move ? 1.0 : 0.0;
+    return 1.0;
 }
 
 } // namespace BT

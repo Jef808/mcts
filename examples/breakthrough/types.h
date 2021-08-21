@@ -205,6 +205,11 @@ inline constexpr bool operator<(E e1, E e2) {
     return to_int<E>(e1) < to_int<E>(e2);
 }
 
+template<typename E>
+inline constexpr bool operator>(E e1, E e2) {
+    return to_int<E>(e1) > to_int<E>(e2);
+}
+
 inline std::ostream& operator<<(std::ostream& out, Pawn p) {
     switch (color_of(p)) {
         case Color::White: { out << "W"; break; }

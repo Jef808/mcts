@@ -75,12 +75,15 @@ const std::vector<Move>& Position::valid_actions() const
 {
     m_move_list.clear();
 
+    if (is_terminal())
+        return m_move_list;
+
     for (const auto& [s, p] : pawns(m_side_to_move)) {
         Bitboard legal_bb = legal_moves_bb(m_side_to_move, s);
 
         Bitboard valid_bb = legal_bb ^ ((in_front(m_side_to_move, square_bb(s)) & color_bb(~m_side_to_move)) | (legal_bb & color_bb(m_side_to_move)));
 
-        while (valid_bb > 0) {
+        while (valid_bb != 0) {
             Square to = lsb(valid_bb);
             m_move_list.push_back(make_move(s, to));
             valid_bb ^= square_bb(to);
@@ -100,7 +103,6 @@ bool Position::apply_action(Move m)
     Square from = from_sq(m);
     Square to = to_sq(m);
     Bitboard to_bb = square_bb(to);
-    //m_byColorBB[to_int(~m_side_to_move)] &= ~to_bb;
 
     auto& opp_color_bb = color_bb(~m_side_to_move);
     // If Capture
