@@ -3,16 +3,16 @@
 
 #include <array>
 #include <cstdint>
-#include <type_traits>
 
+namespace ttt {
 
 template<typename E>
 constexpr std::underlying_type_t<E> to_int(E e) noexcept {
     return static_cast<std::underlying_type_t<E>>(e);
 }
 
-namespace ttt {
-
+using Key = uint32_t;
+using Bitboard = uint32_t;
 
 enum class Player {
     X, O,
@@ -27,18 +27,22 @@ enum class Token {
 constexpr Token token_of(Player p) {
     return p == Player::X ? Token::X : Token::O;
 }
+
 constexpr int Square_nb = 9;
 
-enum class Square : uint8_t {
+enum class Square {
     A1, B1, C1,
     A2, B2, C2,
     A3, B3, C3,
     Nb = Square_nb
 };
 
+constexpr Square make_square(int col, int row)
+{
+    return Square(col + 3 * row);
+}
+
 using Move = Square;
-using Key = uint32_t;
-using Bitboard = uint32_t;
 
 constexpr std::array<Token, Square_nb> Empty_Grid
 { Token::None, Token::None, Token::None,
@@ -66,18 +70,28 @@ LinesAsSquares
     { Square::A3, Square::B2, Square::C1 }
 };
 
+constexpr std::array<std::array<std::size_t, 3>, 8>
+LinesAsIndex
+{ std::array<std::size_t, 3>
+    { 0, 1, 2 },
+    { 3, 4, 5 },
+    { 6, 7, 8 },
+    { 0, 3, 6 },
+    { 1, 4, 7 },
+    { 2, 5, 8 },
+    { 0, 4, 8 },
+    { 2, 4, 7 }
+};
 
 template<typename E>
 inline E& operator++(E& e) {
-    return e = E(to_int(e) + 1);
+    return e = (e == E::Nb ? e : E(to_int(e) + 1));
 }
 
 template<typename E>
 inline bool operator<(E a, E b) {
     return to_int(a) < to_int(b);
 }
-
-
 
 } // namespace ttt
 

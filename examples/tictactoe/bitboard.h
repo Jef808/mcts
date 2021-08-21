@@ -9,12 +9,6 @@
 
 namespace ttt {
 
-
-template<typename E>
-constexpr std::underlying_type_t<E> to_int(E e) noexcept {
-    return static_cast<std::underlying_type_t<E>>(e);
-}
-
 template<typename E, typename T = Bitboard>
 using Bitboards = std::array<T, to_int(E::Nb)>;
 
@@ -37,6 +31,17 @@ constexpr Bitboards<Token> TokenBB
   0x1249249, 0x2492492, 0x4924924
 };
 
+constexpr Bitboards<Player, Bitboards<Square>> MoveBB
+{{
+  { 0x3,    0x18,    0xC0,
+    0x600,  0x3000,  0x18000,
+    0xC0000, 0x600000, 0x3000000
+  },
+  { 0x5,      0x28,      0x140,
+    0xA00,    0x5000,    0x28000,
+    0x140000, 0xA00000,  0x5000000
+  }
+}};
 
 constexpr Bitboard square_bb(Square s) {
     return SquareBB[to_int(s)];
@@ -50,6 +55,15 @@ constexpr Bitboard token_bb(Token t) {
     return TokenBB[to_int(t)];
 }
 
+constexpr Bitboard move_bb(Player p, Square s) {
+  return MoveBB[to_int(p)][to_int(s)];
+}
+
+/** Least Significant Bit. */
+constexpr uint32_t lsb(Bitboard b)
+{
+  return __builtin_ctzl(b);
+}
 
 
 } // namespace ttt
