@@ -3,6 +3,7 @@
 
 #include "utils/stopwatch.h"
 
+#include <iostream>
 #include <chrono>
 
 
@@ -35,6 +36,7 @@ public:
     {
         Board b = m_state;
         player_type player = b.side_to_move();
+
         b.apply_action(a);
 
         while (!b.is_terminal())
@@ -45,6 +47,7 @@ public:
         auto score = Board::evaluate_terminal(b);
         if (~b.side_to_move() != player)
             return 1.0 - score;
+
         return score;
     }
 

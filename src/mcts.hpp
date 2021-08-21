@@ -14,7 +14,6 @@
 #include <thread>
 #include <vector>
 
-
 #include "utils/stopwatch.h"
 
 namespace mcts {
@@ -47,6 +46,33 @@ inline ActionT Mcts<StateT, ActionT, UCB_Functor, Playout_Functor, MAX_DEPTH>::b
     run();
     return_to_root();
     edge_pointer edge = get_best_edge(method);
+
+#ifdef DEBUG_BEST_ACTION
+    const auto& children = p_current_node->children;
+
+    std::cerr << "\n\nAt node\n"
+                  << m_state
+                  << "\nPlayer: "
+                  << m_state.side_to_move()
+                  << "...\nChoosing the best edge amongst the "
+                  << children.size()
+                  << " edges" << std::endl;
+    int cnt = 0;
+    for (const auto& e : children)
+    {
+        std::cerr << "Edge " << cnt
+                  << " (Action: " << e.action << "):"
+                  << "\nAverage value: " << e.total_val / (e.n_visits + 1)
+                  << "\nbest_val: " << e.best_val
+                  << "\nn_visits: " << e.n_visits
+                  << std::endl;
+    }
+    std::cerr << "\nChose Action: " << edge->action << "):"
+              << "\nAverage value:  " << edge->total_val / (edge->n_visits + 1)
+              << "\nbest_val: " << edge->best_val
+              << "\nn_visits: " << edge->n_visits
+              << std::endl;
+#endif
 
     return edge->action;
 }
@@ -118,14 +144,6 @@ void Mcts<StateT, ActionT, UCB_Functor, Playout_Functor, MAX_DEPTH>::select_leaf
         // from the point of view of the current player, so we get minimax behavior)
         edge_pointer edge = get_best_edge(ActionSelection::by_ucb);
 
-        #ifdef DEBUG
-            if (edge->player != m_state.side_to_move())
-            {
-                std::cerr << "WARNING: In select_leaf(): "
-                      << "Edge / state player mismatch..." << std::endl;
-            }
-        #endif
-
         traverse_edge(edge);
     }
 }
@@ -154,17 +172,38 @@ Mcts<StateT, ActionT, UCB_Functor, Playout_Functor, MAX_DEPTH>::get_best_edge(
         return a.best_val < b.best_val;
     };
 
-    #ifdef DEBUG
-        std::cerr << "\n\nAt node with player state.side_to_move() = "
-                  << m_state.side_to_move()
-                  << "...\nChoosing the best edge amongst "
-                  << p_current_node->children.size()
-                  << " children"
-                  << std::endl;
-    #endif
+#ifdef DEBUG_BEST_EDGE
+
+#endif
 
     auto& children = p_current_node->children;
     auto it = std::max_element(children.begin(), children.end(), cmp);
+
+#ifdef DEBUG_BEST_EDGE
+    std::cerr << "\n\nAt node\n"
+                  << m_state
+                  << "\nPlayer: "
+                  << m_state.side_to_move()
+                  << "...\nChoosing the best edge amongst the "
+                  << children.size()
+                  << " edges" << std::endl;
+    int cnt = 0;
+    for (const auto& e : children)
+    {
+        std::cerr << "Edge " << cnt
+                  << " (Action: " << e.action << "):"
+                  << "\nAverage value: " << e.total_val / (e.n_visits + 1)
+                  << "\nbest_val: " << e.best_val
+                  << "\nn_visits: " << e.n_visits
+                  << std::endl;
+    }
+    std::cerr << "\nChose Edge " << std::distance(children.begin(), it)
+              << " (Action: " << it->action << "):"
+              << "\nAverage value:  " << it->total_val / (it->n_visits + 1)
+              << "\nbest_val: " << it->best_val
+              << "\nn_visits: " << it->n_visits
+              << std::endl;
+#endif
 
     return (!children.empty() ? &*it : nullptr);
 }
@@ -179,89 +218,68 @@ Mcts<StateT, ActionT, UCB_Functor, Playout_Functor, MAX_DEPTH>::simulate_playout
     const ActionT& action, int n_reps)
 {
     player_type player = m_state.side_to_move();
-
-    // If the current state is already terminal,
-    // return the terminal evaluation from the correct player point of view.
-    if (m_state.is_terminal())
-    {
-        reward_type terminal_eval = evaluate_terminal();
-
-#ifdef DEBUG
-            std::cerr << "\nState is terminal with evaluation "
-                  << std::setprecision(2) << terminal_eval
-                  << std::endl;
-#endif
-
-        // This means the whole tree consists of one terminal node and we have no information on
-        // the previous player (nothing matters at this point)
-        if (m_tree.depth() == 0)
-        {
-            return 1.0 - terminal_eval;
-        }
-
-        // If there is a parent edge, it represents the last action
-        // of the player who finished the game, so the evaluate_terminal() result
-        // is from their point of view.
-        else
-        {
-            if (m_tree.parent()->player != player)
-            {
-                terminal_eval = 1.0 - terminal_eval;
-            }
-
-            return terminal_eval;
-        }
-    }
-
     // Backup the state, initialize local vars and apply the initial action.
     StateT backup = m_state;
     ActionT _action = action;
     reward_type score = 0.0;
 
-    score += backup.evaluate(_action) * n_reps;
+    score += backup.evaluate(_action);
     backup.apply_action(_action);
 
-    for (int i=0; i<n_reps; ++i)
-    {
-        reward_type _sim_score = 0.0;
-        StateT _sim = backup;
 
-        // NOTE: The Playout functor stores a reference to the state it's
-        // passed in its constructor
-        Playout_Functor Playout_Func{ _sim };
-
-        // NOTE: To evaluate actions returned by the Playout_Functor from the
-        // state before applying the action. (Should be taken cared of inside
-        // of Playout_Func ideally...)
-        StateT _sim_prev = _sim;
-
-        while (!_sim.is_terminal())
-        {
-            _sim_prev = _sim;
-            _action = Playout_Func();
-            _sim_score += _sim_prev.evaluate(_action);
-#ifdef DEBUG
-            std::cout << _sim_prev << '\n'
-                      << "Action: "
-                      << _action << "\n**************" << std::endl;
+#ifdef DEBUG_PLAYOUT
+    std::cerr << "\n############# BEG OF PLAYOUT #############\n"
+              << m_state
+              << "\nPlayer: "
+              << player
+              << "\nAction: "
+              << action << '\n' << std::endl;
 #endif
-        }
+    reward_type _sim_score = 0.0;
+    StateT _sim = backup;
 
-        // Compute the terminal evaluation and negate it if the player
-        // who played last is not the same as the player 'running' this
-        // simulation.
-        reward_type eval_terminal = StateT::evaluate_terminal(_sim);
+    // NOTE: The Playout functor stores a reference to the state it's
+    // passed in its constructor
+    Playout_Functor Playout_Func{ _sim };
 
-        if (~_sim.side_to_move() != player)  // Last_player = !_sim.side_to_move()
-        {
-            eval_terminal = 1.0 - eval_terminal;
-        }
+    // NOTE: To evaluate actions returned by the Playout_Functor from the
+    // state before applying the action. (Should be taken cared of inside
+    // of Playout_Func ideally...)
+    StateT _sim_prev = _sim;
 
-        score += _sim_score + eval_terminal;
+    while (!_sim.is_terminal())
+    {
+        _sim_prev = _sim;
+        _action = Playout_Func();
+        _sim_score += _sim_prev.evaluate(_action);
+#ifdef DEBUG_PLAYOUT
+        std::cerr << _sim_prev << '\n'
+                  << "Action: "
+                  << _action << '\n'
+                  << _sim
+                  << "\n**************" << std::endl;
+#endif
     }
 
-    // Return the average of the above scores
-    return score / n_reps;
+    // Compute the terminal evaluation and negate it if the player
+    // who played last is not the same as the player 'running' this
+    // simulation.
+    reward_type eval_terminal = StateT::evaluate_terminal(_sim);
+
+    if (~_sim.side_to_move() != player)  // Last_player = !_sim.side_to_move()
+    {
+        eval_terminal = 1.0 - eval_terminal;
+    }
+
+#ifdef DEBUG_PLAYOUT
+    std::cerr << "\nTERMINAL STATE\n\n"
+              << "\nScore: "
+              << std::setprecision(2)
+              << _sim_score + eval_terminal
+              << "\n############# END OF PLAYOUT #############\n" << std::endl;
+#endif
+
+    return _sim_score + eval_terminal;
 }
 
 template <typename StateT,
@@ -286,13 +304,13 @@ void Mcts<StateT, ActionT, UCB_Functor, Playout_Functor, MAX_DEPTH>::expand_curr
 
     ++p_current_node->n_visits;
 
-    #ifdef DEBUG
-        std::cerr << "\n\n\nUsing 5 simulations each, expanding the "
+#ifdef DEBUG_EXPANSION
+        std::cerr << "\n\nExpanding the "
               << valid_actions.size()
-              << " children of "
+              << " children of\n"
               << m_state
-              << " **Player " << player
-              << "...\nFound:\n";
+              << "(Player: " << player << ")..."
+              << "\nFound:\n";
         for (const auto e : p_current_node->children)
         {
             std::cerr << "Action " << e.action
@@ -302,7 +320,7 @@ void Mcts<StateT, ActionT, UCB_Functor, Playout_Functor, MAX_DEPTH>::expand_curr
                       << " n_visits " << e.n_visits
                       << std::endl;
         }
-    #endif
+#endif
 }
 
 template <typename StateT,
@@ -329,10 +347,10 @@ void Mcts<StateT, ActionT, UCB_Functor, Playout_Functor, MAX_DEPTH>::backpropaga
         {
             val = m_tree.parent()->player != player_pov ? 1.0 - val : val;
         }
-        else
-        {
-            val = 1.0 - val;
-        }
+        // else
+        // {
+        //     val = 1.0 - val;
+        // }
     }
     else
     {
@@ -343,14 +361,13 @@ void Mcts<StateT, ActionT, UCB_Functor, Playout_Functor, MAX_DEPTH>::backpropaga
 
         val = with_best_avg->total_val/(1.0 + with_best_avg->n_visits);
 
-        #ifdef DEBUG
-
+#ifdef DEBUG_BACKPROPAGATION
             std::cerr << "\n\nWe now backpropagate the best value we got from the simulations, "
                   << "which is "
                   << std::setprecision(2)
                   << val
                   << std::endl;
-        #endif
+#endif
     }
     
     m_tree.backpropagate(val, player_pov);

@@ -69,7 +69,7 @@ public:
     }
     void backpropagate(reward_type reward, player_type player = player_type{})
     {
-#ifdef DEBUG
+#ifdef DEBUG_BACKPROPAGATION
         std::cerr << "\n\n\nInside the tree, we update the stats of each edges above "
                   << " and carefully manage the players point of views:\n"
                   << " Whenever the edge leading to the current depth corresponds"
@@ -80,7 +80,8 @@ public:
 #endif
 
         while (m_depth > 0) {
-#ifdef DEBUG
+
+#ifdef DEBUG_BACKPROPAGATION
             std::cerr << "\nDepth: " << m_depth
                       << ", Reward: " << reward
                       << std::endl;
@@ -97,7 +98,7 @@ public:
             m_edge_stack[m_depth]->total_val += reward;
             ++m_edge_stack[m_depth]->n_visits;
 
-#ifdef DEBUG
+#ifdef DEBUG_BACKPROPAGATION
             std::cerr << "\nedge with player " << m_edge_stack[m_depth]->player << ':'
                       << "\ntotal_val: " << m_edge_stack[m_depth]->total_val - reward
                       << " --> " << m_edge_stack[m_depth]->total_val
