@@ -13,7 +13,7 @@ public:
     using action_type = int;
     using player_type = bool;
 
-    explicit Board(bool first_player);
+    Board();
 
     bool is_terminal() const;
 
@@ -34,10 +34,7 @@ public:
     /**
      * This is only defined to be compatible with the current implementation of MCTS.
     */
-    reward_type evaluate(int action) const
-    {
-        return 0.0;
-    }
+    reward_type evaluate(int action) const;
 
     /**
      * Return 1.0 for a win, 0.0 for a loss, 0.5 for a draw.

@@ -170,7 +170,7 @@ int main()
     //bool mcts_player = 1;
     bool rand_player = 0;
 
-    Board bk { 1 };
+    Board bk { };
 
     utils::Stopwatch sw;
 

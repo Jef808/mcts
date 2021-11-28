@@ -84,7 +84,7 @@ int main()
 
     const bool human_player = 1;
     bool human_plays_first = 1;
-    Board b(human_plays_first);
+    Board b{ };
     int move { };
 
     while (!b.is_terminal())

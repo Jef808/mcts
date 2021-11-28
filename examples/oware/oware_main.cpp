@@ -41,23 +41,7 @@ inline bool last_player(const Board& b)
 
 inline Result last_player_result(Board::reward_type terminal_eval)
 {
-    return Result { -1 + (terminal_eval > 0.2) + (terminal_eval > 0.7) };
-}
-
-inline Result mcts_player_result(Board::reward_type terminal_eval,
-    bool last_player,
-    bool mcts_player)
-{
-    // The result of the `last_player`: the player who played the last
-    // move of the game. (The `terminal_eval` score is from the point
-    // of view of that player).
-    Result last_player_result { -1 + (terminal_eval > 0.2) + (terminal_eval > 0.7) };
-
-    // Basic logic but a bit of gymnastic
-    Result mcts_res = (last_player_result == Result::Draw) ? Result::Draw : (mcts_player == last_player) ? last_player_result
-                                                                                                         : negate(last_player_result);
-
-    return mcts_res;
+    return Result { -1 + (terminal_eval > 0.49999) + (terminal_eval > 0.5000001) };
 }
 
 void progress_bar(int cnt, int n_games)
@@ -144,7 +128,7 @@ void make_play(int n_games,
         progress_bar(game, 2 * n_games);
 
         // On odd game numbers, agent2 goes first and vice-versa.
-        Board b { game & 1 ? agent2_player : agent1_player };
+        Board b { };
 
         Agent1 agent1(b);
         conf1(agent1);
@@ -169,10 +153,10 @@ void make_play(int n_games,
                 time2 += sw2.get();
             }
 
-#ifdef DEBUG
+#ifdef DEBUG_OWARE
             std::cerr << b
                       << "\nPlayer: " << b.side_to_move()
-                      << "\nChosen action: " << action
+                      << "\nChosen action: " << action_buf
                       << std::endl;
 #endif
             agent1.apply_root_action(action_buf);
@@ -290,19 +274,20 @@ int main()
     using Agent5 = OwareMctsAgent_Weighted50;
 
 
-    int n_games = 5;
-    configure_agent<Agent3> conf1{};
-    configure_agent<Agent1> conf2{};
+    int n_games = 10;
+    configure_agent<Agent1> conf1{};
+    configure_agent<Agent0> conf2{};
 
-    conf1.n_iterations = conf2.n_iterations = 3000;
+    conf1.n_iterations = 5000;
+    conf2.n_iterations = 12;
     conf1.max_time = conf2.max_time = 0;
 
     std::cout << "\n********** "
-              << agents[3] << " vs " << agents[1]
+              << agents[1] << " vs " << agents[0]
               << " **********\n\n"
               << std::endl;
 
-    make_play<Agent3, Agent1>(n_games, conf1, conf2);
+    make_play<Agent1, Agent0>(n_games, conf1, conf2);
     //make_play<OwareMctsAgent1, DefaultMctsAgent>(n_games);
 
     return EXIT_SUCCESS;

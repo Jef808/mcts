@@ -128,8 +128,6 @@ template <typename StateT,
     size_t MAX_DEPTH>
 void Mcts<StateT, ActionT, UCB_Functor, Playout_Functor, MAX_DEPTH>::select_leaf()
 {
-    // Once there is only one terminal node in the tree, we have no choice
-    // but to pick that as the leaf
     if (p_current_node->n_visits > 0 && p_current_node->children.empty())
     {
         ++p_current_node->n_visits;
@@ -139,9 +137,6 @@ void Mcts<StateT, ActionT, UCB_Functor, Playout_Functor, MAX_DEPTH>::select_leaf
     while (p_current_node->n_visits > 0 && !p_current_node->children.empty())
     {
         ++p_current_node->n_visits;
-
-        // The next edge along which to travel (Note that it is the best edge
-        // from the point of view of the current player, so we get minimax behavior)
         edge_pointer edge = get_best_edge(ActionSelection::by_ucb);
 
         traverse_edge(edge);
@@ -171,10 +166,6 @@ Mcts<StateT, ActionT, UCB_Functor, Playout_Functor, MAX_DEPTH>::get_best_edge(
 
         return a.best_val < b.best_val;
     };
-
-#ifdef DEBUG_BEST_EDGE
-
-#endif
 
     auto& children = p_current_node->children;
     auto it = std::max_element(children.begin(), children.end(), cmp);

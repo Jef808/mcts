@@ -105,12 +105,12 @@ inline bool side_empty(const Board& b, bool player)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor and accessors
 ////////////////////////////////////////////////////////////////////////////////
-Board::Board(bool first_player)
+Board::Board()
     : player2 { 4, 4, 4, 4, 4, 4 }
     , player1 { 4, 4, 4, 4, 4, 4 }
     , man_player2 { 0 }
     , man_player1 { 0 }
-    , m_player { first_player }
+    , m_player { 1 }
 {
 }
 
@@ -133,6 +133,10 @@ bool Board::side_to_move() const
 std::vector<int> Board::valid_actions() const
 {
     std::vector<int> ret;
+
+    if (is_terminal())
+        return ret;
+
     const auto& cur_player_holes = m_player ? player1 : player2;
 
     for (auto [hole_ndx, hole_it] = std::make_pair(0, cur_player_holes.begin());
@@ -152,22 +156,19 @@ bool Board::is_terminal() const
 }
 
 /**
- * Return [score1, score2] with score1 the score of the player
- * who played the last move.
- *
- * So this is the scores from the point of view of that player.
+ * Return [score1, score2]
 */
 std::pair<int, int> Board::final_score() const
 {
     int player1_score = std::accumulate(player1.begin(), player1.end(), man_player1);
     int player2_score = std::accumulate(player2.begin(), player2.end(), man_player2);
 
-    bool last_player = !m_player;
-
-    if (!last_player)
-        std::swap(player1_score, player2_score);
-
     return std::make_pair(player1_score, player2_score);
+}
+
+double Board::evaluate(int action) const
+{
+    return 0.0;
 }
 
 /**
@@ -181,7 +182,9 @@ double Board::evaluate_terminal(const Board& b)
     if (p1_score == p2_score)
         return 0.5;
 
-    return p1_score > p2_score;
+    int score_diff = b.side_to_move() == 0 ? p1_score - p2_score : p2_score - p1_score;
+
+    return score_diff > 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
